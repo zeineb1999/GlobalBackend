@@ -28,6 +28,8 @@ router.register(r'periode-activite', views.PeriodeActiviteViewSet)
 router.register(r'rapport', views.RapportViewSet)
 router.register(r'sauvegarde',views.SauvegardeViewSet)
 router.register(r'historique',views.HistoriqueViewSet)
+router.register(r'historiqueUser',views.HistoriqueUserViewSet)
+router.register(r'equipementarchive',views.EquipementArchiveViewSet)
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 
@@ -68,6 +70,7 @@ urlpatterns = [
     #path('ChangePassword/', ChangePassword.as_view(), name="ChangePassword"),
     path('modificationProfile/',UpdateEmail.as_view(),name="send_reset_password_email"),
     path('genererDATA/', generateExcel.as_view(), name="genererDATA"),
+    path('genererPeriode/', generatePeriode.as_view(), name="genererPeriode"),
     path('rechercher_donnees/', rechercher_donnees.as_view(), name="rechercher_donnees"),
     #path('batiment-details/', batiment_details.as_view(), name="batiment_details"),
     path('batimentsList/', get_batiments_with_etages_zones, name='batiment-list'),
@@ -90,8 +93,10 @@ urlpatterns = [
     path('rapportByAlerte/<int:alerteId>/', views.getRapportByAlerte, name='getRapports'),
     path('initialData/', initialData.as_view(), name='initialData'),
     path('decision/', equipementdecision.as_view(), name='equipementdecision'),
-  
-   
-  ]
+    path('equipement/<int:equipement_id>/periodes', getPeriodeParEquipement.as_view(), name='getPeriodeParEquipement'),
+    path('historiqueUtilisateur/', historiqueUtilisateur.as_view(), name='historiqueUtilisateur'),
+    path('activerBatiment/',activer_batiment.as_view(),name='activerBatiment'),
+    path('desactiverBatiment/',desactiver_batiment.as_view(),name='desactiverBatiment')
+   ]
 
 urlpatterns += router.urls

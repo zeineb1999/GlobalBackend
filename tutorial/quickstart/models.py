@@ -13,6 +13,7 @@ class ProfileUser(models.Model):
 class Batiment(models.Model):
     nomBatiment = models.CharField(max_length=500)
     typeBatiment = models.CharField(max_length=500,null=True, blank=True)
+    active = models.BooleanField(default=True)
     def str(self):
             return self.nomBatiment
     
@@ -37,6 +38,7 @@ class Etage(models.Model):
     surface= models.FloatField(null=True, blank=True)
     nomEtage= models.CharField(max_length=500, null=True, blank=True)
     batimentId = models.ForeignKey(Batiment,on_delete=models.CASCADE)
+    active = models.BooleanField(default=True)
     def __str__(self):
             return self.nomEtage
     def calculerConsommationTotaleEtage(self):
@@ -65,6 +67,7 @@ class Zone(models.Model):
     maxT = models.FloatField(null=True, blank=True)
     minH = models.FloatField(null=True, blank=True)
     maxH = models.FloatField(null=True, blank=True)
+    active = models.BooleanField(default=True)
     """ def str(self):
             return self.nomLocal """
 
@@ -93,7 +96,7 @@ class Equipement(models.Model):
     # Définition des champs du modèle
     nom = models.CharField(max_length=500)
     etat = models.CharField(max_length=100, choices=ETAT_CHOICES, default='ON')  # Définition de la valeur par défaut pour l'état
-    type = models.CharField(max_length=100)  # Définition de la valeur par défaut pour la catégorie
+    type = models.CharField(max_length=100, null=True, blank=True)  # Définition de la valeur par défaut pour la catégorie
     categorie = models.CharField(max_length=500, null=True, blank=True)
     puissance = models.FloatField(null=True, blank=True)
     zoneE = models.ForeignKey(Zone, on_delete=models.CASCADE)
@@ -205,6 +208,8 @@ class Rapport(models.Model):
   dateRapport = models.DateTimeField(null=True, blank=True)
   vu = models.BooleanField(default=False)
   notifie = models.BooleanField(default=False)
+  decision =models.CharField(max_length=2000, null=True, blank=True)
+
 
 
 
@@ -221,12 +226,31 @@ class Sauvegarde(models.Model):
 
 class Historique(models.Model):
     equipement = models.ForeignKey(Equipement, on_delete=models.CASCADE, null=True, blank=True)
-    dateDebut = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    dateDebut = models.DateTimeField(auto_now_add=True)
     dateFin = models.DateTimeField(null=True, blank=True)
     decision = models.CharField(max_length=2000, null=True, blank=True)
     rapport = models.ForeignKey(Rapport, on_delete=models.CASCADE, null=True, blank=True)
+    equipementDest =models.IntegerField(null=True, blank=True)
 
 
+class HistoriqueUser(models.Model):
+    date = models.DateTimeField(auto_now_add=True)
+    change = models.CharField(max_length=2000, null=True, blank=True)
+    action = models.CharField(max_length=2000, null=True, blank=True)
+    firstname = models.CharField(max_length=2000, null=True, blank=True)
+    numero = models.IntegerField(null=True, blank=True)
 
+    
+class EquipementArchive(models.Model):
+    # Définition des choix pour les états et les catégories
+    ETAT_CHOICES = (("ON", "ON"), ("OFF", "OFF"))
+    CATEGORIE_CHOICES = (("critique", "critique"), ("normal", "normal"))
 
-
+    # Définition des champs du modèle
+    nom = models.CharField(max_length=500)
+     # Définition de la valeur par défaut pour l'état
+    type = models.CharField(max_length=100, null=True, blank=True)  # Définition de la valeur par défaut pour la catégorie
+    categorie = models.CharField(max_length=500, null=True, blank=True)
+    puissance = models.FloatField(null=True, blank=True)
+    zoneE = models.ForeignKey(Zone, on_delete=models.CASCADE)
+    date = models.DateTimeField(auto_now_add=True)

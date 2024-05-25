@@ -214,6 +214,7 @@ class Rapport(models.Model):
   dateRapport = models.DateTimeField(null=True, blank=True)
   vu = models.BooleanField(default=False)
   notifie = models.BooleanField(default=False)
+  decision = models.CharField(max_length=2000, null=True, blank=True)
   class Meta:
     db_table = "quickstart_rapport"
 

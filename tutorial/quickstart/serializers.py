@@ -30,6 +30,7 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         instance.last_name = validated_data.get('last_name', instance.last_name)
         instance.email = validated_data.get('email', instance.email)
         instance.password = validated_data.get('password', instance.password)
+        
         instance.save()
         return instance
     def update_password(self, instance, validated_data):
@@ -43,17 +44,17 @@ from django.contrib.auth.models import User
 class ZoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = Zone
-        fields = ('id','nomLocal', 'typeLocal','surface', 'etageZ', 'minT', 'maxT', 'minH', 'maxH')
+        fields = ('id','nomLocal', 'typeLocal','surface', 'etageZ', 'minT', 'maxT', 'minH', 'maxH','active')
 
 class EtageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Etage
-        fields = ('id', 'nomEtage', 'surface', 'batimentId')
+        fields = ('id', 'nomEtage', 'surface', 'batimentId','active')
 
 class BatimentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Batiment
-        fields = ('id','nomBatiment','typeBatiment')
+        fields = ('id','nomBatiment','typeBatiment','active')
 
 
 
@@ -113,7 +114,7 @@ class AlerteSerializer(serializers.ModelSerializer):
 class RapportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rapport
-        fields = ['id','alerte','redacteur','causes', 'solutions', 'risques', 'equipementsDemandes', 'equipementsNecessites', 'equipement', 'dateRapport', 'vu', 'notifie']
+        fields = ['id','alerte','redacteur','causes', 'solutions', 'risques', 'equipementsDemandes', 'equipementsNecessites', 'equipement', 'dateRapport', 'vu', 'notifie','decision']
 
 class SauvegardeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -123,4 +124,16 @@ class SauvegardeSerializer(serializers.ModelSerializer):
 class HistoriqueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Historique
-        fields = ['id','equipement','dateDebut','dateFin','decision','rapport']
+        fields = ['id','equipement','dateDebut','dateFin','decision','rapport','equipementDest']
+        
+from rest_framework import serializers
+from .models import HistoriqueUser
+
+class HistoriqueUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HistoriqueUser
+        fields = ['id', 'date', 'change', 'action', 'firstname', 'numero']
+class EquipementArchiveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EquipementArchive
+        fields = ('id','nom',  'categorie','type','puissance','zoneE','date')

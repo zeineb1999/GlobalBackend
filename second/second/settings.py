@@ -102,7 +102,7 @@ EMAIL_HOST_PASSWORD = 'ykhnnkrqgvqbewcw'
 
 WSGI_APPLICATION = 'second.wsgi.application'
 
-CHANNEL_LAYERS = {
+"""CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
@@ -110,6 +110,13 @@ CHANNEL_LAYERS = {
         },
     },
 }
+""" 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        
+    }
+} 
 
 ASGI_APPLICATION = 'second.asgi.application'
 
@@ -119,8 +126,15 @@ ASGI_APPLICATION = 'second.asgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME':  'C:\\Users\\zeine\\OneDrive\\Desktop\\gitIslem\\backend\\tutorial\\tutorial\\tutorial\\db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'datapfe',
+        'USER': 'root',
+        'PASSWORD': 'root',
+        'HOST': '127.0.0.1',
+        'PORT': '3306',
+        'OPTIONS': {
+           "init_command": "SET GLOBAL max_connections = 1000", #<-- The fix
+        }
     }
 }
 

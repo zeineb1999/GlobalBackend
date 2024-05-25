@@ -113,7 +113,7 @@ class AlerteSerializer(serializers.ModelSerializer):
 class RapportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rapport
-        fields = ['id','alerte','redacteur','causes', 'solutions', 'risques', 'equipementsDemandes', 'equipementsNecessites', 'equipement', 'dateRapport', 'vu', 'notifie']
+        fields = ['id','alerte','redacteur','causes', 'solutions', 'risques', 'equipementsDemandes', 'equipementsNecessites', 'equipement', 'dateRapport', 'vu', 'notifie','decision']
 
 class SauvegardeSerializer(serializers.ModelSerializer):
     class Meta:

@@ -243,41 +243,6 @@ import json
 
 from channels.generic.websocket import WebsocketConsumer
 import json
-""" class AlertConsumer(WebsocketConsumer):
-  def connect(self):
-    self.room_name = 'test'
-    self.room_group_name = self.room_name
-    async_to_sync(self.channel_layer.group_add)(
-    self.room_group_name, self.channel_name)
-    self.accept()
-  def disconnect(self, close_code):
-  # Leave room group
-    async_to_sync(self.channel_layer.group_discard)(
-    self.room_group_name,
-    self.channel_name
-    )
-  # broadcast Notification; Individual + community
-  def broadcast_notification_message(self, event):
-    print('event  envoi', event)
-    message = event['message']
-    self.send(text_data=json.dumps({ 
-    'message': message
-    }))
-
-@receiver(post_save, sender=Alerte)
-def notification_post_save(sender, instance, created, **kwargs):
-  if created:
-    serailize = AlerteSerializer(instance)
-    channel_layer = get_channel_layer()
-    group_name = 'test'
-    async_to_sync(channel_layer.group_send)(
-      group_name, {
-      'type': 'broadcast_notification_message',
-      'message': serailize.data
-      }
-    )
-    print('group_name', group_name)
- """
 from channels.generic.websocket import StopConsumer
 class AlertConsumer(WebsocketConsumer):
   def connect(self):
@@ -302,7 +267,7 @@ class AlertConsumer(WebsocketConsumer):
     if self.is_running:
             #print('send_data running')
       self.check_conditions_and_create_alerts()
-      Timer(120, self.send_data).start()
+      Timer(60, self.send_data).start()
   def check_conditions_and_create_alerts(self):
         print('check_conditions_and_create_alerts chaque minute')
         locaux = Zone.objects.all()
@@ -317,7 +282,7 @@ class AlertConsumer(WebsocketConsumer):
                 if date_recherchee in contenu_json:
                     temperature = contenu_json[date_recherchee]["temperature"]
                     humidite = contenu_json[date_recherchee]["humidite"]
-                    
+                    print("local", local.id,"temperature",temperature,"humidité",humidite)
                     if temperature < local.minT or temperature > local.maxT :
                         print('cas temperature : ', temperature, 'local : ', local)
                         self.create_alert(local, temperature, "temperature")
@@ -352,7 +317,7 @@ class AlertConsumer(WebsocketConsumer):
     self.send(text_data=json.dumps({ 
     'message': message
     }))
-
+ 
 @receiver(post_save, sender=Alerte)
 def notification_post_save(sender, instance, created, **kwargs):
   if created:
@@ -386,6 +351,8 @@ class UserIDChangeConsumer(WebsocketConsumer):
     self.send(text_data=json.dumps({ 
     'message': message
     }))
+ 
+
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from .models import Alerte
@@ -421,9 +388,16 @@ from asgiref.sync import async_to_sync
 from threading import Timer
 from datetime import datetime
 import os
+import json
+from channels.generic.websocket import WebsocketConsumer
+from asgiref.sync import async_to_sync
+from channels.db import database_sync_to_async
+from threading import Timer
+from datetime import datetime
+import os
 
 
-class LocalConsumer(WebsocketConsumer):
+""" class LocalConsumer(WebsocketConsumer):
     def connect(self):
         self.room_name = 'test'
         self.room_group_name = self.room_name
@@ -518,7 +492,7 @@ class LocalConsumer(WebsocketConsumer):
                     #print('result : ', results)
 
         return results
- 
+  """
 #***********************************  fin web socket 1min *************************************
 from rest_framework import viewsets
 from rest_framework.response import Response

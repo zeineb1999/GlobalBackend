@@ -27,6 +27,9 @@ class SauvegardeViewSet(viewsets.ModelViewSet):
 class HistoriqueViewSet(viewsets.ModelViewSet):
     queryset = Historique.objects.all()
     serializer_class = HistoriqueSerializer
+class EquipementArchiveViewSet(viewsets.ModelViewSet):
+    queryset = EquipementArchive.objects.all()
+    serializer_class = EquipementArchiveSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by('-date_joined')
@@ -802,7 +805,25 @@ def zones_by_etage(request, etage_id):
     except Zone.DoesNotExist:
         # Si la zone spécifiée n'existe pas, retourner une erreur 404
         return Response(status=status.HTTP_404_NOT_FOUND)
-
+class getPeriodeParEquipement(APIView):
+    def get(self, request, equipement_id):
+        try:
+            # Récupérez les paramètres de la requête GET
+            date = request.GET.get('date')
+            this_equipement = get_object_or_404(Equipement, id=equipement_id)
+            #equipements = Equipement.objects.filter(id=this_equipement.id)
+            periodes = PeriodeActivite.objects.filter(
+              Equipement=equipement_id,
+              tempsDebut__lte=date,
+              tempsFin__gte=date
+            )
+            # Sérialiser les données des équipements
+            serializer = PeriodeActiviteSerializer(periodes, many=True)
+            # Retourner la réponse avec les équipements sérialisés
+            return Response(serializer.data)
+        except PeriodeActivite.DoesNotExist:
+            # Si la zone spécifiée n'existe pas, retourner une erreur 404
+            return Response(status=status.HTTP_404_NOT_FOUND)
 @api_view(['GET'])
 def etages_by_batiment(request, batiment_id):
     try:
@@ -1080,6 +1101,7 @@ class EquipementsConsommationParPeriode(APIView):
             #print(date_debut, ' -> ', date_fin)
             #print('*******************debut ', date_debut, 'fin ', date_fin)
             equipements = Equipement.objects.all()
+            
             equipements_consommation = []
             for equipement in equipements:
                 consommation= equipement.calculerConsommationParPeriode(date_debut, date_fin)
@@ -2809,6 +2831,7 @@ def generateJSON(minT):
 
       return data
 """ 
+#************************************************ generateJSON File ********************************
 class generateExcel(APIView):
 
     def post(self, request, *args, **kwargs):
@@ -2831,7 +2854,94 @@ class generateExcel(APIView):
 
         
         return Response('done', status=status.HTTP_200_OK)
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from datetime import datetime, timedelta
+import random
+from .models import Equipement, PeriodeActivite  # Assurez-vous d'importer vos modèles
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from datetime import datetime, timedelta
+import random
+from .models import Equipement, PeriodeActivite  # Assurez-vous d'importer vos modèles
+class historiqueUtilisateur(APIView):
+    def post(self, request, *args, **kwargs):
+        data = request.data  # Utilisez request.data pour sélectionner les données du corps de la requête
+        param1 = data.get('id')
+        param2 = data.get('firstname')
+        param3 = data.get('change')
+        param4 = data.get('action')
+        HistoriqueUser.objects.create(
+            numero=param1,
+            firstname=param2,
+            change=param3,
+            action=param4,
+            date = datetime.now()
+                
+        )
+        return Response('done', status=status.HTTP_200_OK)
+class generatePeriode(APIView):
+    def post(self, request, *args, **kwargs):
+        data = request.data  # Utilisez request.data pour récupérer les données du corps de la requête
+        param1 = data.get('equipement_id')
+        try:
+            equipement = Equipement.objects.get(id=param1)
+        except Equipement.DoesNotExist:
+            return Response({'error': 'Equipement not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        def randomtime():
+            return timedelta(hours=random.randint(0, 23), minutes=random.randint(0, 59), seconds=random.randint(0, 59))
+
+        # Utiliser la date et l'heure courantes
+        current_datetime = datetime.now()
+
+        # Générer un nombre aléatoire de périodes d'activité pour l'équipement pour la date courante
+        num_activites = random.randint(1, 3)
+        for i in range(num_activites):
+            # Générer des dates de début et de fin aléatoires pour la journée
+            debut = current_datetime + randomtime()
+            fin = debut + timedelta(minutes=random.randint(30, 240))  # Durée aléatoire entre 30 minutes et 4 heures
+
+            # Calculer la durée de la période
+            duree = (fin - debut).total_seconds() / 3600  # Convertir en heures
+
+            # Récupérer la puissance de l'équipement
+            puissance = equipement.puissance  # Supposons que le champ pour la puissance soit 'puissance'
+
+            # Calculer la consommation
+            consommation = duree * puissance
+
+            # Afficher les détails pour le débogage
+            print("temps debut:", debut, "temps fin:", fin, "consommation:", consommation)
+
+            # Créer une nouvelle période d'activité
+            PeriodeActivite.objects.create(
+                tempsDebut=debut,
+                tempsFin=fin,
+                Equipement=equipement,
+                consommation=consommation
+            )
+
+        return Response('done', status=status.HTTP_200_OK)
+
+""" def generateJSONALL(maxT,maxH,minT,minH,id):
+
+       
+        donnees_aleatoires = generateJSON(minT,maxT,minH,maxH)
+        json_data = json.dumps(donnees_aleatoires, indent=2)
+
+    # Définir le chemin du fichier dans le dossier media
+        chemin_fichier = os.path.join('media', 'donnees' + str(id) + '.json')
+
+    # Écrire les données JSON dans le fichier
+        with open(chemin_fichier, 'w') as fichier:
+          fichier.write(json_data)
+
+        
+  """       
 
 
 ############################## fin call and generate file JSON FOR NEW ZONE
@@ -3168,87 +3278,69 @@ from datetime import datetime, timedelta
 import random
 from random import uniform
 
+import json
+import os
+from datetime import datetime, timedelta
+from random import uniform, randint
+from django.utils.timezone import now  # Assuming you're using Django's timezone utilities
+
 def generateJSON(minT, maxT, minH, maxH):
     data = {}
-    date1 = datetime.now().replace(second=0)
+    date1 =datetime(2024,5,21,21,59,00)
     date2 = datetime(2024, 6, 30, 23, 59, 0)
     delta = timedelta(minutes=1)
 
     while date1 <= date2:
         data[date1.strftime('%Y-%m-%d %H:%M:%S')] = {
-            'temperature': uniform(float(minT), float(maxT)),
-            'humidite': uniform(float(minH), float(maxH)),
+            'temperature': round(uniform(minT, maxT), 2),
+            'humidite': round(uniform(minH, maxH), 2),
             'presence': randint(0, 1)
         }
         date1 += delta
 
     return data
-
-
-""" def generateJSON(minT,maxT,minH,maxH):
-      data = {}
-
-      # Définir la période de temps
-      #date1 = datetime(2024, 1, 1, 0, 0, 0)
-      date1 = datetime.now()
-      print(date1)
-      date2 = datetime(2024, 6, 30, 23, 59, 0)
-      print(date2)
-      delta = timedelta(minutes=1)
-
-      c=1
-      # Générer des données pour chaque jour
-       # Utilisez request.data pour récupérer les données du corps de la requête
-     
-      param2 = minT
-      if param2 =='17':
-        T_func = générerT1
-        H_func = générerH1
-
-      elif param2 == '15':
-        T_func = générerT2
-        H_func = générerH2
-
-      elif param2 == '5':
-        T_func = générerT3
-        H_func = générerH3
-
-      elif param2 == '-18':
-        T_func = générerT4
-        H_func = générerH4
-
-      else:
-        T_func = générerT5
-        H_func = générerH5     
-
-      while date1 <= date2:
-        if(c==1):
-          prec1=22
-          prec2=40
-          c=c+1
-
-        prec1 = float(T_func(date1, prec1))
-        prec2 = float(H_func(date1,prec2))
-                  
-                  
-
-        data[date1.strftime('%Y-%m-%d %H:%M:%S')] = {
-            'temperature': T_func(date1, prec1),
-            'humidite': H_func(date1, prec2),
-            'presence': random.randint(0,1)
-                      
-                    
-        }
-
-        date1 += delta
-
-      return data """
-"""
+""" 
 zones = Zone.objects.all()
 for zone in zones:
+    print(f"Processing Zone: {zone}")
     minT = zone.minT
+    maxT = zone.maxT
+    minH = zone.minH
+    maxH = zone.maxH
+
+    # Log to ensure values are correct
+    print(f"Generating data for Zone {zone.id}: minT={minT}, maxT={maxT}, minH={minH}, maxH={maxH}")
+
+    # Generate the random data
+    donnees_aleatoires = generateJSON(minT, maxT, minH, maxH)
+    
+    # Convert the data to JSON format
+    json_data = json.dumps(donnees_aleatoires, indent=2)
+
+    # Define the file path in the media folder
+    chemin_fichier = os.path.join('media', f'donnees{zone.id}.json')
+
+    # Write the JSON data to the file
+    with open(chemin_fichier, 'w') as fichier:
+        fichier.write(json_data)
+
+    print(f"Data for Zone {zone.id} written to {chemin_fichier}")
+
+
+ 
+   """
+
+      
+
+""" zones = Zone.objects.all()
+for zone in zones:
+    print(zone)
+    minT = zone.minT
+    maxT = zone.maxT
+    maxH = zone.maxH
+    minH = zone.minH
     # Générer les données aléatoires avec la valeur minT de la zone actuelle
-    donnees_aleatoires = generateJSON(minT)
+    donnees_aleatoires = generateJSON(minT,maxT,minH,maxH)
     
     # Convertir les données en format JSON
     json_data = json.dumps(donnees_aleatoires, indent=2)
@@ -3260,8 +3352,8 @@ for zone in zones:
     with open(chemin_fichier, 'w') as fichier:
         fichier.write(json_data)
 
-
  """
+
 ### fin generer json sur views
 """ for i in range(52,53):
   donnees_aleatoires = generer_donnees()
@@ -3335,17 +3427,18 @@ def get_json(request):
 
 # Une fois que les données ont été écrites dans le fichier, vous pouvez accéder à ce fichier en utilisant le chemin chemin_fichier
 
-'''
+
+""" 
 def genererCsvLocal():
     # Charger le fichier CSV en tant que DataFrame
     zones = Zone.objects.all()
     for zone in zones:
-        generateExcel(zone.id, zone.minT)
+        generateExcel(zone.id, zone.minT,zone.maxT,zone.maxH,zone.minT)
 
 
 genererCsvLocal()
 
-'''
+"""
 
 """ import concurrent.futures
 
@@ -3659,3 +3752,163 @@ class initialData(APIView):
         formatted_data += "];"
         return Response(formatted_data)
         
+""" def createClims():
+
+  for zone in Zone.objects.all():
+      print('zone: ', zone.id)
+      equipment_name = f"Climatiseur {zone.id}"
+      Equipement.objects.create(
+          nom=equipment_name,
+          etat="OFF",
+          type="Climatiseurs",
+          categorie='normal',
+          puissance=1000,
+          zoneE=zone
+      )
+createClims() 
+
+def createChauffages():
+
+  for zone in Zone.objects.all():
+      print('zone: ', zone.id)
+      equipment_name = f"Chauffage {zone.id}"
+      Equipement.objects.create(
+          nom=equipment_name,
+          etat="OFF",
+          type="Chauffages",
+          categorie='normal',
+          puissance=1000,
+          zoneE=zone
+      )
+createChauffages()  
+def createDishumid():
+
+  for zone in Zone.objects.all():
+      print('zone: ', zone.id)
+      equipment_name = f"Déshumidificateur {zone.id}"
+      Equipement.objects.create(
+          nom=equipment_name,
+          etat="OFF",
+          type="Déshumidificateurs",
+          categorie='normal',
+          puissance=500,
+          zoneE=zone
+      )
+createDishumid() 
+def createLits():
+
+  for zone in Zone.objects.all():
+      print('zone: ', zone.id)
+      if zone.nomLocal == "Salle de Consultation de Cardiologie" or zone.nomLocal == "Salle de Tests Cardiaques" or zone.nomLocal == "Salle de Consultation de Gynécologie" or zone.nomLocal == "Salle de Préparation à l'Accouchement" or zone.nomLocal == "Salle de consultations spécialisées" or zone.nomLocal == "Unité de soins pédiatriques d’urgences" or zone.nomLocal == "Unité de soins de longue durée d’urgence" or zone.nomLocal == "Salle d'Électroencéphalographie (EEG)" or zone.nomLocal == "Salle de Radiographie" :
+        equipment_name = f"Lit Electrique {zone.id}"
+        Equipement.objects.create(
+            nom=equipment_name,
+            etat="OFF",
+            type="Equipements médicaux",
+            categorie='normal',
+            puissance=1200,
+            zoneE=zone
+        )
+createLits()  
+def createPrises():
+
+  for zone in Zone.objects.all():
+      print('zone: ', zone.id)
+      equipment_name = f"Prise à usage personnel 1 {zone.id}"
+      Equipement.objects.create(
+          nom=equipment_name,
+          etat="OFF",
+          type="Prises à usage personnel",
+          categorie='normal',
+          puissance=36,
+          zoneE=zone
+      )
+createPrises() 
+
+
+def createLeds():
+
+  for zone in Zone.objects.all():
+      print('zone: ', zone.id)
+      equipment_name = f"Panneau Led {zone.id}"
+      Equipement.objects.create(
+          nom=equipment_name,
+          etat="OFF",
+          type="Eclairage",
+          categorie='normal',
+          puissance=36,
+          zoneE=zone
+      )
+createLeds()  """
+
+""" def createLits():
+
+  for zone in Zone.objects.all():
+      print('zone: ', zone.id)
+      if zone.nomLocal == "Salle de Consultation de Cardiologie" or zone.nomLocal == "Salle de Radiographie Cardiaque" or zone.nomLocal == "Salle d'urgences" or zone.nomLocal == "Unité de soins intensifs d’urgences" or zone.nomLocal == "Salle de consultation" :
+        equipment_name = f"Lit Electrique {zone.id}"
+        Equipement.objects.create(
+            nom=equipment_name,
+            etat="OFF",
+            type="Equipements médicaux",
+            categorie='normal',
+            puissance=1200,
+            zoneE=zone
+        )
+createLits() """
+
+
+class HistoriqueUserViewSet(viewsets.ModelViewSet):
+    queryset = HistoriqueUser.objects.all()
+    serializer_class = HistoriqueUserSerializer
+
+class activer_batiment(APIView):
+    def post(self, request, *args, **kwargs):
+        data = request.data  # Utilisez request.data pour sélectionner les données du corps de la requête
+        param1 = data.get('batimentId')
+        
+        try:
+            batiment = Batiment.objects.get(id=param1)
+            batiment.active = True
+            batiment.save()
+            return Response('done', status=status.HTTP_200_OK)
+        except Batiment.DoesNotExist:
+            return Response('Batiment not found', status=status.HTTP_404_NOT_FOUND)
+class desactiver_batiment(APIView):
+  def post(self, request, *args, **kwargs):
+        data = request.data
+        param1 = data.get('batimentId')
+        
+        try:
+            # Désactiver le bâtiment
+            batiment = Batiment.objects.get(id=param1)
+            batiment.active = False
+            batiment.save()
+
+            # Obtenir tous les étages du bâtiment
+            etages = Etage.objects.filter(batimentId=param1)
+
+            for etage in etages:
+                etage.active=False
+                etage.save()
+                # Obtenir toutes les zones de l'étage
+                zones = Zone.objects.filter(etageZ=etage.id)
+
+                for zone in zones:
+                    zone.active=False
+                    zone.save()
+                    # Obtenir tous les équipements de la zone
+                    equipements = Equipement.objects.filter(zoneE=zone.id)
+
+                    for equipement in equipements:
+                        # Supprimer toutes les périodes d'activité de l'équipement
+                        PeriodeActivite.objects.filter(Equipement=equipement.id).delete()
+
+            return Response('done', status=status.HTTP_200_OK)
+
+        except Batiment.DoesNotExist:
+            return Response('Batiment not found', status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            # Log l'exception si nécessaire
+            return Response(f'Error: {str(e)}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)

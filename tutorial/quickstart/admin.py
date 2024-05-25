@@ -12,7 +12,8 @@ admin.site.register(ProfileUser)
 admin.site.register(Rapport)
 admin.site.register(Sauvegarde)
 admin.site.register(Historique)
-
+admin.site.register(HistoriqueUser)
+admin.site.register(EquipementArchive)
 from rest_framework.authtoken.admin import TokenAdmin
 
 TokenAdmin.raw_id_fields = ['user']
