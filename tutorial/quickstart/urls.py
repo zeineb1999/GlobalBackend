@@ -30,6 +30,10 @@ router.register(r'sauvegarde',views.SauvegardeViewSet)
 router.register(r'historique',views.HistoriqueViewSet)
 router.register(r'historiqueUser',views.HistoriqueUserViewSet)
 router.register(r'equipementarchive',views.EquipementArchiveViewSet)
+router.register(r'historiqueBatiment',views.HistoriqueADbatimentViewSet)
+router.register(r'historiqueEtage',views.HistoriqueADetageViewSet)
+router.register(r'historiqueZone',views.HistoriqueADzoneViewSet)
+
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 
@@ -49,7 +53,7 @@ urlpatterns = [
     path('getId/<str:username>/', views.get_id, name='get_id'),
     path('zones/<int:zone_id>/equipements/', views.equipements_by_zone, name='equipements_by_zone'),
     path('etage/<int:etage_id>/zones/', views.zones_by_etage, name='zones_by_etage'),
-    path('read-csv/<str:file_path>/', views.read_csv, name='read_csv'),
+    #path('read-csv/<str:file_path>/', views.read_csv, name='read_csv'),
     path('excel-data/', excel_data_api, name='excel_data_api'),
     path('equipements/consommation_totale/', EquipementsTotalConsommation.as_view(), name='tous_equipements_consommation'),
     path('batiment/<int:batiment_id>/etages/', views.etages_by_batiment, name='etages_by_batiment'),
@@ -71,7 +75,7 @@ urlpatterns = [
     path('modificationProfile/',UpdateEmail.as_view(),name="send_reset_password_email"),
     path('genererDATA/', generateExcel.as_view(), name="genererDATA"),
     path('genererPeriode/', generatePeriode.as_view(), name="genererPeriode"),
-    path('rechercher_donnees/', rechercher_donnees.as_view(), name="rechercher_donnees"),
+    #path('rechercher_donnees/', rechercher_donnees.as_view(), name="rechercher_donnees"),
     #path('batiment-details/', batiment_details.as_view(), name="batiment_details"),
     path('batimentsList/', get_batiments_with_etages_zones, name='batiment-list'),
     path('recuperer/',get_json,  name='etages-list'),
@@ -96,7 +100,14 @@ urlpatterns = [
     path('equipement/<int:equipement_id>/periodes', getPeriodeParEquipement.as_view(), name='getPeriodeParEquipement'),
     path('historiqueUtilisateur/', historiqueUtilisateur.as_view(), name='historiqueUtilisateur'),
     path('activerBatiment/',activer_batiment.as_view(),name='activerBatiment'),
-    path('desactiverBatiment/',desactiver_batiment.as_view(),name='desactiverBatiment')
+    path('desactiverBatiment/',desactiver_batiment.as_view(),name='desactiverBatiment'),
+    path('activerEtage/',activer_etage.as_view(),name='activeretage'),
+    path('desactiverEtage/',desactiver_etage.as_view(),name='desactiveretage'),
+    path('activerZone/',activer_zone.as_view(),name='activerzone'),
+    path('desactiverZone/',desactiver_zone.as_view(),name='desactiverzone'),
+    path('changerRole/',changer_role.as_view(),name='changerRole'),
+    path('deletePeriode/',supprimer_periode.as_view(),name='supprimer_periode'),
+    path('dateDesactivation/<int:zoneId>/',views.dateDesactivation,name='dateDesactivation')
    ]
 
 urlpatterns += router.urls

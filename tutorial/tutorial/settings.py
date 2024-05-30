@@ -178,6 +178,7 @@ LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'Africa/Algiers'  # Utilisez le fuseau horaire correspondant à l'Algérie
 
+#USE_TZ = False
 
 USE_I18N = True
 

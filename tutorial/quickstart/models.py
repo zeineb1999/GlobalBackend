@@ -254,3 +254,48 @@ class EquipementArchive(models.Model):
     puissance = models.FloatField(null=True, blank=True)
     zoneE = models.ForeignKey(Zone, on_delete=models.CASCADE)
     date = models.DateTimeField(auto_now_add=True)
+
+
+class HistoriqueADbatiment(models.Model):
+    option = models.CharField(max_length=100, null=True, blank=True)
+    batimentId = models.ForeignKey(Batiment,on_delete=models.CASCADE)
+    date= models.DateTimeField(auto_now_add=True)
+    userId = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    raison = models.CharField(max_length=100, null=True, blank=True)
+
+    
+
+class HistoriqueADetage(models.Model):
+    option = models.CharField(max_length=100, null=True, blank=True)
+    etageId = models.ForeignKey(Etage, on_delete=models.CASCADE)
+    date= models.DateTimeField(auto_now_add=True)
+    userId = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    raison = models.CharField(max_length=100, null=True, blank=True)
+
+class HistoriqueADzone(models.Model):
+    option = models.CharField(max_length=100, null=True, blank=True)
+    zoneId = models.ForeignKey(Zone, on_delete=models.CASCADE)
+    date= models.DateTimeField(auto_now_add=True)
+    userId = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    raison = models.CharField(max_length=100, null=True, blank=True)
+
+
+
+class PeriodeActiviteLastYear(models.Model):
+  tempsDebut = models.DateTimeField()
+  tempsFin = models.DateTimeField(null=True, blank=True)
+  Equipement = models.ForeignKey(Equipement,on_delete=models.CASCADE)
+  consommation = models.FloatField(null=True, blank=True)
+  """ def __str__(self):
+        return self.Equipement.nom """
+
+
+  def calculer_consommation(self):
+      debut = self.tempsDebut.replace(tzinfo=None).timestamp()
+      fin = self.tempsFin.replace(tzinfo=None).timestamp()
+      #debut = self.tempsDebut.timestamp()
+      #fin = self.tempsFin.timestamp()
+
+      heures_activite = (fin - debut) / 3600
+      self.consommation = self.Equipement.puissance * heures_activite
+      self.save()

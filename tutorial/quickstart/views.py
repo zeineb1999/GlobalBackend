@@ -30,6 +30,15 @@ class HistoriqueViewSet(viewsets.ModelViewSet):
 class EquipementArchiveViewSet(viewsets.ModelViewSet):
     queryset = EquipementArchive.objects.all()
     serializer_class = EquipementArchiveSerializer
+class HistoriqueADbatimentViewSet(viewsets.ModelViewSet):
+    queryset = HistoriqueADbatiment.objects.all()
+    serializer_class = HistoriqueADbatimentSerializer
+class HistoriqueADetageViewSet(viewsets.ModelViewSet):
+    queryset = HistoriqueADetage.objects.all()
+    serializer_class = HistoriqueADetageSerializer
+class HistoriqueADzoneViewSet(viewsets.ModelViewSet):
+    queryset = HistoriqueADzone.objects.all()
+    serializer_class = HistoriqueADzoneSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by('-date_joined')
@@ -368,7 +377,7 @@ def notification_post_save(sender, instance, created, **kwargs):
     )
     print('group_name', group_name)
 #------------------------------------------------------- alerte to maintenance ---------------------------
-class UserIDChangeConsumer(WebsocketConsumer):
+""" class UserIDChangeConsumer(WebsocketConsumer):
   def connect(self):
     self.room_name = 'user_id_change'
     self.room_group_name = self.room_name
@@ -408,7 +417,7 @@ def notify_user_id_change(sender, instance, **kwargs):
                     'message': serialize.data
                 }
             )
-            print('userID modified, notification sent')
+            print('userID modified, notification sent') """
 #------------------------------------------------------- FIN alerte to maintenance ---------------------------
   # broadcast Notification; Individual + community
 #************************************** fin web socket *****************************
@@ -700,6 +709,9 @@ def optimize_consumption():
     equipements = Equipement.objects.all()
     start_date = datetime(2024, 1, 1)
     end_date = datetime(2024, 6, 30)
+    #il y aura 100 individus dans chaque génération de la population.
+    #l'algorithme fonctionnera sur 50 générations.
+    # 20 individus seront sélectionnés comme parents dans chaque génération.
     best_solution = genetic_algorithm(100, 50, 20, equipements, start_date, end_date)
     for debut, fin, equipement in best_solution:
         consommation = (fin - debut).total_seconds() / 3600 * equipement.puissance
@@ -794,6 +806,24 @@ def getRapportByEquipement(request, equipementId):
         # Si l'equipement spécifiée n'existe pas, retourner une erreur 404
         return Response(status=status.HTTP_404_NOT_FOUND)
 @api_view(['GET'])
+def dateDesactivation(request, zoneId):
+    try:
+        # Récupérer tous les rapports associés à l'equipement spécifique
+        equipement = HistoriqueADzone.objects.filter(zoneId=zoneId, option="desactiver").last()
+            
+        
+        # Sérialiser les données des rapports
+        serializer = HistoriqueADzoneSerializer(equipement, many=False)
+        
+        # Retourner la réponse avec les rapports sérialisés
+        return Response(serializer.data)
+    except Rapport.DoesNotExist:
+        # Si l'equipement spécifiée n'existe pas, retourner une erreur 404
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+
+@api_view(['GET'])
 def zones_by_etage(request, etage_id):
     try:
         # Récupérer tous les équipements associés à la zone spécifique
@@ -871,20 +901,6 @@ def get_etage_details(request, nom_etage):
 import os
 import csv
 from django.http import JsonResponse
-
-def read_csv(request, file_path):
-    # Construire le chemin complet du fichier CSV en fonction du chemin fourni
-    full_file_path = os.path.join('C:\\Users\\zeine\\OneDrive\\Desktop\\PFE MASTER2\\dataset', file_path)
-
-    # Lire le fichier CSV et récupérer les données
-    data = []
-    with open(full_file_path, 'r') as file:
-        csv_reader = csv.reader(file)
-        for row in csv_reader:
-            data.append(row)
-
-    # Retourner les données dans une réponse JSON
-    return JsonResponse({'data': data})
 
 
 #               ******************************************* Excel data views *******************************************
@@ -1101,7 +1117,6 @@ class EquipementsConsommationParPeriode(APIView):
             #print(date_debut, ' -> ', date_fin)
             #print('*******************debut ', date_debut, 'fin ', date_fin)
             equipements = Equipement.objects.all()
-            
             equipements_consommation = []
             for equipement in equipements:
                 consommation= equipement.calculerConsommationParPeriode(date_debut, date_fin)
@@ -1109,6 +1124,8 @@ class EquipementsConsommationParPeriode(APIView):
                     'id': equipement.id,
                     'nom': equipement.nom,
                     'etat': equipement.etat,
+                    'categorie': equipement.categorie,
+                    'type': equipement.type,
                     'localId': equipement.zoneE.id,
                     'nomLocal': equipement.zoneE.nomLocal,
                     'typeLocal': equipement.zoneE.typeLocal,
@@ -1127,39 +1144,34 @@ class EquipementsConsommationParPeriode(APIView):
             return Response(equipements_consommation, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 class EquipementConsommationParPeriode(APIView):
     def get(self, request, equipement_id):
         try:
             # Récupérez les paramètres de la requête GET
             date_debut = request.GET.get('dateDebut')
             date_fin = request.GET.get('dateFin')
-            this_equipement = get_object_or_404(Equipement, id=equipement_id)
-            equipements = Equipement.objects.filter(id=this_equipement.id)
-
-            for equipement in equipements:
-                consommation= equipement.calculerConsommationParPeriode(date_debut, date_fin)
-                equipements_consommation = {
-                    'id': equipement.id,
-                    'nom': equipement.nom,
-                    'etat': equipement.etat,
-                    'localId': equipement.zoneE.id,
-                    'nomLocal': equipement.zoneE.nomLocal,
-                    'typeLocal': equipement.zoneE.typeLocal,
-                    'numEtage': equipement.zoneE.etageZ.id,
-                    'nomEtage': equipement.zoneE.etageZ.nomEtage,
-                    'batiment': equipement.zoneE.etageZ.batimentId.nomBatiment,
-                    'batimentId': equipement.zoneE.etageZ.batimentId.id,
-                    'dateDebut': date_debut,
-                    'dateFin': date_fin,
-                    'consommation_W': consommation,
-                    'consommation_kW': consommation/1000
-                }
+            equipement = get_object_or_404(Equipement, id=equipement_id)
+            consommation= equipement.calculerConsommationParPeriode(date_debut, date_fin)
+            equipements_consommation = {
+                'id': equipement.id,
+                'nom': equipement.nom,
+                'etat': equipement.etat,
+                'localId': equipement.zoneE.id,
+                'nomLocal': equipement.zoneE.nomLocal,
+                'typeLocal': equipement.zoneE.typeLocal,
+                'numEtage': equipement.zoneE.etageZ.id,
+                'nomEtage': equipement.zoneE.etageZ.nomEtage,
+                'batiment': equipement.zoneE.etageZ.batimentId.nomBatiment,
+                'batimentId': equipement.zoneE.etageZ.batimentId.id,
+                'dateDebut': date_debut,
+                'dateFin': date_fin,
+                'consommation_W': consommation,
+                'consommation_kW': consommation/1000
+            }
+            #print('**',  equipements_consommation)
             return Response(equipements_consommation, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 class localConsommationParPeriode(APIView):
     def get(self, request, zone_id):
         date_debut = request.GET.get('dateDebut')
@@ -1468,260 +1480,12 @@ class Allusers(APIView):
             data.append({**serializer.data, 'role': role})
         return Response(data)
 import os
-""" 
-def traiter_chauffage(equi):
-    tempsDebut=None
-    verif = False
-    chemin_fichier = os.path.join('media', 'data' + str(equi.zoneE.id) + '.csv')
-    if os.path.exists(chemin_fichier):
-        with open(chemin_fichier, 'r') as fichier:
-            for ligne in fichier:
-                temperature= float(ligne.strip().split(';')[2])
-                #print('**************************temperature :  ',temperature)
-                #print('**************************la ligne complete :  ',ligne)
-                # Ajoutez ici la logique pour vérifier la température et contrôler le chauffage/climatisation
-
-                if temperature < equi.zoneE.maxT:
-
-                    #print('Le chauffage est actif')
-                    puissance = equi.puissance  # Supposons que le champ pour la puissance soit 'puissance'
-
-            # Calculer la consommation
-
-                    #print('************************** DEBUT :  ',datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M'))  # Convertir la première colonne en datetime
-                    tempsDebut = datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M')
-                    if(verif==False):
-                      # Créer une nouvelle période d'activité
-                      periode_activite = PeriodeActivite.objects.create(
-                          tempsDebut=datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M'),  # Convertir la première colonne en datetime
-                          tempsFin=None,
-                          Equipement=equi,
-
-                      )
-                      verif=True
-                else :
-                    if(tempsDebut!=None):
-                      #print('************************** FIN :  ',PeriodeActivite.objects.filter(Equipement=equi).latest('tempsDebut'))  # Convertir la première colonne en datetime
-                      verif=False
-                      derniere_periode = PeriodeActivite.objects.filter(Equipement=equi).latest('tempsDebut')
-                      derniere_periode.tempsFin = datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M')
-                      derniere_periode.calculer_consommation()
-                      derniere_periode.save()
-                      tempsDebut=None
-                      #print('--------------------------------------------------------------------------------------------------------------------')
-
-
-
-    else:
-        #print("Le fichier de données pour le local", equi.id, "n'existe pas.")¸
-        pass """
-"""
-def traiter_climatiseur(equi):
-    tempsDebut=None
-    verif = False
-    chemin_fichier = os.path.join('media', 'data' + str(equi.zoneE.id) + '.csv')
-    if os.path.exists(chemin_fichier):
-        with open(chemin_fichier, 'r') as fichier:
-            for ligne in fichier:
-                temperature= float(ligne.strip().split(';')[2])
-                #print('**************************temperature :  ',temperature)
-                #print('**************************la ligne complete :  ',ligne)
-                # Ajoutez ici la logique pour vérifier la température et contrôler le chauffage/climatisation
-
-                if temperature > equi.zoneE.maxT:
-
-                    #print('Le chauffage est actif')
-                    puissance = equi.puissance  # Supposons que le champ pour la puissance soit 'puissance'
-
-            # Calculer la consommation
-
-                    #print('************************** DEBUT :  ',datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M'))  # Convertir la première colonne en datetime
-                    tempsDebut = datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M')
-                    if(verif==False):
-                      # Créer une nouvelle période d'activité
-                      periode_activite = PeriodeActivite.objects.create(
-                          tempsDebut=datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M'),  # Convertir la première colonne en datetime
-                          tempsFin=None,
-                          Equipement=equi,
-
-                      )
-                      verif=True
-                else :
-                    if(tempsDebut!=None):
-                      #print('************************** FIN :  ',PeriodeActivite.objects.filter(Equipement=equi).latest('tempsDebut'))  # Convertir la première colonne en datetime
-                      verif=False
-                      derniere_periode = PeriodeActivite.objects.filter(Equipement=equi).latest('tempsDebut')
-                      derniere_periode.tempsFin = datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M')
-                      derniere_periode.calculer_consommation()
-                      derniere_periode.save()
-                      tempsDebut=None
-                      #print('--------------------------------------------------------------------------------------------------------------------')
-
-
-
-    else:
-        print("Le fichier de données pour le local", equi.id, "n'existe pas.")
-
-def traiter_lampe(equi):
-    tempsDebut=None
-    verif = False
-    chemin_fichier = os.path.join('media', 'data' + str(equi.zoneE.id) + '.csv')
-    if os.path.exists(chemin_fichier):
-        with open(chemin_fichier, 'r') as fichier:
-            for ligne in fichier:
-                temperature= float(ligne.strip().split(';')[4])
-                # Ajoutez ici la logique pour vérifier la température et contrôler le chauffage/climatisation
-
-                if temperature ==1:
-
-                    #print('Lampe actif')
-                    puissance = equi.puissance  # Supposons que le champ pour la puissance soit 'puissance'
-
-            # Calculer la consommation
-
-                    #print('************************** DEBUT :  ',datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M'))  # Convertir la première colonne en datetime
-                    tempsDebut = datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M')
-                    if(verif==False):
-                      # Créer une nouvelle période d'activité
-                      periode_activite = PeriodeActivite.objects.create(
-                          tempsDebut=datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M'),  # Convertir la première colonne en datetime
-                          tempsFin=None,
-                          Equipement=equi,
-
-                      )
-                      verif=True
-                else :
-                    if(tempsDebut!=None):
-                      #print('************************** FIN :  ',PeriodeActivite.objects.filter(Equipement=equi).latest('tempsDebut'))  # Convertir la première colonne en datetime
-                      verif=False
-                      derniere_periode = PeriodeActivite.objects.filter(Equipement=equi).latest('tempsDebut')
-                      derniere_periode.tempsFin = datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M')
-                      derniere_periode.calculer_consommation()
-                      derniere_periode.save()
-                      tempsDebut=None
-                      #print('--------------------------------------------------------------------------------------------------------------------')
-
-
-
-    else:
-        #print("Le fichier de données pour le local", equi.id, "n'existe pas.")
-        pass
-
-def traiter_humidificateur(equi):
-    tempsDebut=None
-    verif = False
-    chemin_fichier = os.path.join('media', 'data' + str(equi.zoneE.id) + '.csv')
-    if os.path.exists(chemin_fichier):
-        with open(chemin_fichier, 'r') as fichier:
-            for ligne in fichier:
-                temperature= float(ligne.strip().split(';')[3])
-                #print('**************************temperature :  ',temperature)
-                #print('**************************la ligne complete :  ',ligne)
-                # Ajoutez ici la logique pour vérifier la température et contrôler le chauffage/climatisation
-
-                if temperature > equi.zoneE.maxH:
-
-                    #print('Le chauffage est actif')
-                    puissance = equi.puissance  # Supposons que le champ pour la puissance soit 'puissance'
-
-            # Calculer la consommation
-                    #print('************************** DEBUT :  ',datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M'))  # Convertir la première colonne en datetime
-                    tempsDebut = datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M')
-                    if(verif==False):
-                      # Créer une nouvelle période d'activité
-                      periode_activite = PeriodeActivite.objects.create(
-                          tempsDebut=datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M'),  # Convertir la première colonne en datetime
-                          tempsFin=None,
-                          Equipement=equi
-                      )
-                      verif=True
-                else :
-                    if(tempsDebut!=None):
-
-                      #print('************************** FIN :  ',PeriodeActivite.objects.filter(Equipement=equi).latest('tempsDebut'))  # Convertir la première colonne en datetime
-                      verif=False
-                      derniere_periode = PeriodeActivite.objects.filter(Equipement=equi).latest('tempsDebut')
-                      derniere_periode.tempsFin = datetime.strptime(ligne.strip().split(';')[0]+' '+ ligne.strip().split(';')[1], '%d/%m/%Y %H:%M')
-
-                      derniere_periode.calculer_consommation()
-
-                      derniere_periode.save()
-                      tempsDebut=None
-                      #print('--------------------------------------------------------------------------------------------------------------------')
-
-
-
-    else:
-        #print("Le fichier de données pour le local", equi.id, "n'existe pas.")
-        pass
-
-
-import random
-from datetime import datetime, timedelta
-from .models import PeriodeActivite, Equipement
-PeriodeActivite.objects.all().delete()
-#Liste des équipements disponibles
-equipements = Equipement.objects.all()
-
-#Fonction pour générer une heure aléatoire dans une journée
-
-def randomtime():
-    return timedelta(hours=random.randint(0, 23), minutes=random.randint(0, 59), seconds=random.randint(0, 59))
-
-#Définir la plage de dates
-start_date = datetime(2024, 1, 1)
-end_date = datetime(2024, 12, 31)
-
-#Boucle à travers chaque jour
-current_date = start_date
-while current_date <= end_date:
-    # Boucle à travers chaque équipement
-    for equipement in equipements:
-        if 'chauffage'  in equipement.nom.lower():
-            print('dkhel fel cas********************************************************')
-            traiter_chauffage(equipement)
-        elif 'climatiseur' in equipement.nom:
-            traiter_climatiseur(equipement)
-        elif 'lampe' in equipement.nom or 'led' in equipement.nom:
-            traiter_lampe(equipement)
-        elif 'humidificateur' in equipement.nom:
-            traiter_humidificateur(equipement)
-        else :
-        # Générer un nombre aléatoire de périodes d'activité pour chaque équipement et chaque jour
-          num_activites = random.randint(1, 5)
-
-          for i in range(num_activites):
-              # Générer des dates de début et de fin aléatoires pour la journée
-              debut = current_date + randomtime()
-              fin = debut + timedelta(minutes=random.randint(30, 240))  # Durée aléatoire entre 30 minutes et 4 heures
-
-              # Calculer la durée de la période
-              duree = (fin - debut).total_seconds() / 3600  # Convertir en heures
-
-              # Récupérer la puissance de l'équipement
-              puissance = equipement.puissance  # Supposons que le champ pour la puissance soit 'puissance'
-
-              # Calculer la consommation
-              consommation = duree * puissance
-
-              # Créer une nouvelle période d'activité
-              periode_activite = PeriodeActivite.objects.create(
-                  tempsDebut=debut,
-                  tempsFin=fin,
-                  Equipement=equipement,
-                  consommation=consommation
-              )
-
-    # Passer au jour suivant
-    current_date += timedelta(days=1)
-
- """
 import json
 import os
 from datetime import datetime
 from .models import PeriodeActivite  # Assurez-vous d'importer votre modèle PeriodeActivite ici
-
-def traiter_chauffage(equi):
+################# traiter chauffage avant par mois######################
+""" def traiter_chauffage(equi):
     tempsDebut = None
     verif = False
     chemin_fichier = os.path.join('media', 'donnees' + str(equi.zoneE.id) + '.json') 
@@ -1760,12 +1524,61 @@ def traiter_chauffage(equi):
     else:
         # Le fichier de données pour le local n'existe pas.
       pass
+ """####################### traiter chauffage avec mois #####################
+def traiter_chauffage(equi):
+    tempsDebut = None
+    verif = False
+    chemin_fichier = os.path.join('media', 'prediction' + str(equi.zoneE.id) + '.json') 
+    #print('chemin_fichier ',chemin_fichier) # Assurez-vous que votre fichier est au format JSON
+    if os.path.exists(chemin_fichier):
+        with open(chemin_fichier, 'r') as fichier:
+            data = json.load(fichier)
+            for timestamp, values in data.items():
+                temperature = values['temperature']
+                humidite = values['humidite']
+                # Ajoutez ici la logique pour vérifier la température et l'humidité et contrôler le chauffage/climatisation
+                #print('--------------------la temperature :  ', temperature, 'maxT :  ', equi.zoneE.maxT)
+                timestamp_date = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:00')
+                print('*******************timeexacte',timestamp)
+                
+                # Vérifier si la date se situe dans les mois d'hiver
+                #if (timestamp_date.month in [1, 2, 3, 4]) or (timestamp_date.month == 5 and timestamp_date.day <= 15):
+               
+                if temperature < equi.zoneE.maxT:
+                      # Le chauffage est actif
+                      puissance = equi.puissance  # Supposons que le champ pour la puissance soit 'puissance'
+  
+                      # Calculer la consommation
+                      tempsDebut = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")  # Convertir le timestamp en datetime
+                      print('-------------------temps debut',tempsDebut)
+                      if not verif:
+                          # Créer une nouvelle période d'activité
+                          periode_activite = PeriodeActiviteLastYear.objects.create(
+                              tempsDebut=tempsDebut,
+                              tempsFin=None,
+                              Equipement=equi,
+                          )
+                          verif = True
+                else:
+                      if tempsDebut is not None:
+                          verif = False
+                          derniere_periode = PeriodeActiviteLastYear.objects.filter(Equipement=equi).latest('tempsDebut')
 
+                          derniere_periode.tempsFin = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+                          print("temps fin ",derniere_periode.tempsFin)
+                          derniere_periode.calculer_consommation()
+                          derniere_periode.save()
+                          tempsDebut = None
+    else:
+        # Le fichier de données pour le local n'existe pas.
+      pass
+             
 import json
 import os
 from datetime import datetime
 from .models import PeriodeActivite  # Assurez-vous d'importer votre modèle PeriodeActivite ici
-
+################# traiter climatiseur avant par mois######################
+""" 
 def traiter_climatiseur(equi):
     tempsDebut = None
     verif = False
@@ -1802,6 +1615,52 @@ def traiter_climatiseur(equi):
                         derniere_periode.calculer_consommation()
                         derniere_periode.save()
                         tempsDebut = None
+    else:
+        # Le fichier de données pour le local n'existe pas.
+      pass
+ """
+####################### traiter climatiseur avec mois #####################
+
+def traiter_climatiseur(equi):
+    tempsDebut = None
+    verif = False
+    chemin_fichier = os.path.join('media', 'prediction' + str(equi.zoneE.id) + '.json') 
+    #print('chemin_fichier ',chemin_fichier) # Assurez-vous que votre fichier est au format JSON
+    if os.path.exists(chemin_fichier):
+        with open(chemin_fichier, 'r') as fichier:
+            data = json.load(fichier)
+            for timestamp, values in data.items():
+                temperature = values['temperature']
+                humidite = values['humidite']
+                # Ajoutez ici la logique pour vérifier la température et l'humidité et contrôler le chauffage/climatisation
+                print('--------------------la temperature :  ', temperature, 'maxT :  ', equi.zoneE.maxT)
+                timestamp_date = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                
+                # Vérifier si la date se situe dans les mois d'hiver
+                if (timestamp_date.month in [7,8]) :
+               
+                  if temperature > equi.zoneE.minT:
+                      # Le chauffage est actif
+                      puissance = equi.puissance  # Supposons que le champ pour la puissance soit 'puissance'
+
+                      # Calculer la consommation
+                      tempsDebut = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')  # Convertir le timestamp en datetime
+                      if not verif:
+                          # Créer une nouvelle période d'activité
+                          periode_activite = PeriodeActiviteLastYear.objects.create(
+                              tempsDebut=tempsDebut,
+                              tempsFin=None,
+                              Equipement=equi,
+                          )
+                          verif = True
+                  else:
+                      if tempsDebut is not None:
+                          verif = False
+                          derniere_periode = PeriodeActiviteLastYear.objects.filter(Equipement=equi).latest('tempsDebut')
+                          derniere_periode.tempsFin = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                          derniere_periode.calculer_consommation()
+                          derniere_periode.save()
+                          tempsDebut = None
     else:
         # Le fichier de données pour le local n'existe pas.
       pass
@@ -1861,7 +1720,9 @@ def traiter_humidificateur(equi):
                     puissance = equi.puissance  # Supposons que le champ pour la puissance soit 'puissance'
 
                     # Calculer la consommation
-                    tempsDebut = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')  # Convertir le timestamp en datetime
+                    tempsDebut = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                    print("time",timestamp)
+                    print("debut",tempsDebut)  # Convertir le timestamp en datetime
                     if not verif:
                         # Créer une nouvelle période d'activité
                         periode_activite = PeriodeActivite.objects.create(
@@ -1882,6 +1743,45 @@ def traiter_humidificateur(equi):
         # Le fichier de données pour le local n'existe pas.
       pass
 
+""" equipementss = Equipement.objects.filter(Q(nom__icontains='limatiseur') )
+
+for equipements in equipementss:
+ traiter_climatiseur(equipements)  
+import django.utils.timezone as tz
+print(tz.get_current_timezone())  """ 
+#################################### remplir les equipements speciaux ######################
+""" 
+import random
+from datetime import datetime, timedelta
+from .models import PeriodeActivite, Equipement
+
+#Liste des équipements disponibles
+equipements = Equipement.objects.filter()
+print(equipements)
+#Fonction pour générer une heure aléatoire dans une journée
+
+def randomtime():
+    return timedelta(hours=random.randint(0, 23), minutes=random.randint(0, 59), seconds=random.randint(0, 59))
+
+#Définir la plage de dates
+start_date = datetime(2024, 1, 1)
+end_date = datetime(2024, 6, 30)
+
+#Boucle à travers chaque jour
+
+
+    # Boucle à travers chaque équipement
+for equipement in equipements:
+        
+            print('equipement li rahou fih',equipement)
+            traiter_lampe(equipement)
+        
+ """
+# Passer au jour suivant
+   
+
+###################################### remplir periode activité pour tous les autres types #######################
+""" 
 import random
 from datetime import datetime, timedelta
 from .models import PeriodeActivite, Equipement
@@ -1892,16 +1792,13 @@ from .models import Equipement
 
 # Filtrer les équipements dont le nom contient "lampe" ou "led"
 from django.db.models import Q
-""" 
+
 equipements = Equipement.objects.exclude(
     Q(nom__icontains='humidificateur') |
-    Q(nom__icontains='chauffage') |
-    Q(nom__icontains='climatiseur') |
-    Q(nom__icontains='lampe') |
-    Q(nom__icontains='led')
+    Q(nom__icontains='hauffage') |
+    Q(nom__icontains='limatiseur') 
+ 
 )
-
-equipements = Equipement.objects.all()
 
 #Fonction pour générer une heure aléatoire dans une journée
 
@@ -1909,8 +1806,8 @@ def randomtime():
     return timedelta(hours=random.randint(0, 23), minutes=random.randint(0, 59), seconds=random.randint(0, 59))
 
 #Définir la plage de dates
-start_date = datetime(2024, 1, 1)
-end_date = datetime(2024, 6, 30)
+start_date = datetime(2023, 7, 1)
+end_date = datetime(2023, 12, 31)
 
 #Boucle à travers chaque jour
 current_date = start_date
@@ -1936,7 +1833,7 @@ while current_date <= end_date:
               consommation = duree * puissance
 
               # Créer une nouvelle période d'activité
-              periode_activite = PeriodeActivite.objects.create(
+              periode_activite = PeriodeActiviteLastYear.objects.create(
                   tempsDebut=debut,
                   tempsFin=fin,
                   Equipement=equipement,
@@ -1946,6 +1843,7 @@ while current_date <= end_date:
     # Passer au jour suivant
     current_date += timedelta(days=1)
  """
+###################################### fin remplir periode activité pour tous les autres types #######################
 
 import random
 from datetime import datetime, timedelta
@@ -2766,8 +2664,8 @@ def générerH5(date, prec):
         i=i+1
 
   return T
-"""
-################################## generate json file for new zone 
+
+################################## generate json file for all zones 
 from django.http import JsonResponse
 from django.core.files import File
 import json
@@ -2830,7 +2728,20 @@ def generateJSON(minT):
         date1 += delta
 
       return data
-""" 
+def generateJSONALL():
+
+      Zones=Zone.objects.all()
+      for zone in Zones:
+        donnees_aleatoires = generateJSON(zone.minT)
+        json_data = json.dumps(donnees_aleatoires, indent=2)
+
+      # Définir le chemin du fichier dans le dossier media
+        chemin_fichier = os.path.join('media', 'donnees' + str(zone.id) + '.json')
+
+      # Écrire les données JSON dans le fichier
+        with open(chemin_fichier, 'w') as fichier:
+          fichier.write(json_data)
+#generateJSONALL()
 #************************************************ generateJSON File ********************************
 class generateExcel(APIView):
 
@@ -2948,66 +2859,6 @@ class generatePeriode(APIView):
 
 import pandas as pd
 
-
-
-""" class rechercher_donnees(APIView):
-    def get(self, request):
-        try:
-            date_heure_recherchee = request.GET.get('date')
-            nom_fichier = request.GET.get('nom_fichier')
-            fichier_csv = 'media/data' + str(nom_fichier) + '.csv'
-            df = pd.read_csv(fichier_csv, delimiter=';', header=None)
-            df[0] = pd.to_datetime(df[0] + ' ' + df[1], format='%d/%m/%Y %H:%M')
-            resultat = df[df[0] == pd.to_datetime(date_heure_recherchee, format='%d/%m/%Y %H:%M:%S')]
-
-#Vérifier si des données correspondent à la date et à l'heure spécifiées
-            if resultat.empty:
-                return Response({'error': 'Aucune donnée correspondant à la date et l\'heure spécifiées'}, status=status.HTTP_404_NOT_FOUND)
-
-#Sélectionner uniquement les valeurs de température et d'humidité de la 2ème et 3ème colonnes
-            valeurs_colonnes = resultat.iloc[:, 2:4].values.tolist()
-
-            # Renvoyer les valeurs des colonnes avec une clé 'data'
-            return Response({'data': valeurs_colonnes}, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) """
-
-
-class rechercher_donnees(APIView):
-    def get(self, request):
-        try:
-            date_heure_recherchee = request.GET.get('date')
-            nom_fichier = request.GET.get('nom_fichier')
-            fichier_csv = 'media/data' + str(nom_fichier) + '.csv'
-            df = pd.read_csv(fichier_csv, delimiter=';', nrows=43200,header=None)
-            df[0] = pd.to_datetime(df[0] + ' ' + df[1], format='%d/%m/%Y %H:%M')
-            resultat = df[df[0] == pd.to_datetime(date_heure_recherchee, format='%d/%m/%Y %H:%M:%S')]
-
-            if resultat.empty:
-                return Response({'error': 'Aucune donnée correspondant à la date et l\'heure spécifiées'}, status=status.HTTP_404_NOT_FOUND)
-
-            valeurs_colonnes = resultat.iloc[:, 2:4].values.tolist()
-
-            # Renvoyer les valeurs des colonnes avec une clé 'data'
-            return Response({'data': valeurs_colonnes}, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-# pour l utiliser avec des args
-def rechercher_donnees2(date_heure_recherchee, nom_fichier):
-        fichier_csv = 'media/data' + str(nom_fichier) + '.csv'
-        df = pd.read_csv(fichier_csv, delimiter=';', header=None)
-        df[0] = pd.to_datetime(df[0] + ' ' + df[1], format='%d/%m/%Y %H:%M')
-        resultat = df[df[0] == pd.to_datetime(date_heure_recherchee, format='%d/%m/%Y %H:%M:%S')]
-
-        if resultat.empty:
-            raise ValueError('Aucune donnée correspondant à la date et l\'heure spécifiées')
-
-        valeurs_colonnes = resultat.iloc[:, 2:4].values.tolist()
-
-        return valeurs_colonnes
 
 
 import time
@@ -3283,7 +3134,8 @@ import os
 from datetime import datetime, timedelta
 from random import uniform, randint
 from django.utils.timezone import now  # Assuming you're using Django's timezone utilities
-
+""" 
+iciiiiiiiiiiiiiiii
 def generateJSON(minT, maxT, minH, maxH):
     data = {}
     date1 =datetime(2024,5,21,21,59,00)
@@ -3299,7 +3151,7 @@ def generateJSON(minT, maxT, minH, maxH):
         date1 += delta
 
     return data
-""" 
+iciiiiiiiiii
 zones = Zone.objects.all()
 for zone in zones:
     print(f"Processing Zone: {zone}")
@@ -3433,51 +3285,13 @@ def genererCsvLocal():
     # Charger le fichier CSV en tant que DataFrame
     zones = Zone.objects.all()
     for zone in zones:
-        generateExcel(zone.id, zone.minT,zone.maxT,zone.maxH,zone.minT)
+        generateExcel(zone.id, zone.minT,zone.maxT,zone.maxH,zone.minH)
 
 
 genererCsvLocal()
 
 """
 
-""" import concurrent.futures
-
-class rechercher_donnees(APIView):
-    def get(self, request):
-        try:
-            valeurs_zones = []
-            zones = Zone.objects.all()  # Récupérez toutes les zones depuis la base de données
-            date_heure_recherchee = request.GET.get('date')
-            
-            # Définir une fonction pour lire les données de chaque zone en parallèle
-            def read_zone_data(zone, date_heure_recherchee):
-                fichier_csv = 'media/data' + str(zone.id) + '.csv'
-                df = pd.read_csv(fichier_csv, delimiter=';', header=None)
-                if not df.empty:
-                    df[0] = pd.to_datetime(df[0] + ' ' + df[1], format='%d/%m/%Y %H:%M')
-                    resultat = df[df[0] == pd.to_datetime(date_heure_recherchee, format='%d/%m/%Y %H:%M:%S')]
-                
-                    temperature = resultat.iloc[0, 2]
-                    humidite = resultat.iloc[0, 3]
-                   
-                    return {'zone_id': zone.id, 'temperature': temperature, 'humidite': humidite}
-                else:
-                    # Gérez le cas où le DataFrame est vide
-                    return {'zone_id': zone.id, 'temperature': None, 'humidite': None}
-                            
-                            
-       
-            # Utiliser des processus parallèles pour lire les données de chaque zone
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                futures = [executor.submit(read_zone_data, zone, date_heure_recherchee) for zone in zones]
-                for future in concurrent.futures.as_completed(futures):
-                    valeurs_zones.append(future.result())
-
-            return Response({'data': valeurs_zones}, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
- """
 
 class get_alerte_by_id(APIView):
     def get(self, request):
@@ -3863,22 +3677,88 @@ class HistoriqueUserViewSet(viewsets.ModelViewSet):
     serializer_class = HistoriqueUserSerializer
 
 class activer_batiment(APIView):
-    def post(self, request, *args, **kwargs):
-        data = request.data  # Utilisez request.data pour sélectionner les données du corps de la requête
-        param1 = data.get('batimentId')
+  def post(self, request, *args, **kwargs):
+      data = request.data
+      param1 = data.get('batimentId')
         
-        try:
+      try:
+            # Désactiver le bâtiment
             batiment = Batiment.objects.get(id=param1)
             batiment.active = True
             batiment.save()
+
+            # Obtenir tous les étages du bâtiment
+            etages = Etage.objects.filter(batimentId=param1,active=False)
+
+            for etage in etages:
+                etage.active=True
+                etage.save()
+                # Obtenir toutes les zones de l'étage
+                zones = Zone.objects.filter(etageZ=etage.id,active=False)
+
+                for zone in zones:
+                    zone.active=True
+                    zone.save()
+                    # Obtenir tous les équipements de la zone
+                    equipements = Equipement.objects.filter(zoneE=zone.id)
+
+                    for equipement in equipements:
+                        print(equipement,equipement.nom)
+                        # Supprimer toutes les périodes d'activité de l'équipement
+                        
+                       # Utiliser la date et l'heure courantes
+                        current_datetime = timezone.now()
+                        print("date",current_datetime)
+                        # Générer un nombre aléatoire de périodes d'activité pour l'équipement pour la date courante
+                        num_activites = random.randint(1, 3)
+
+                        for _ in range(num_activites):
+                            # Générer des dates de début et de fin aléatoires pour la journée
+                            debut = current_datetime + timedelta(
+                                hours=random.randint(0, 23),
+                                minutes=random.randint(0, 59),
+                                seconds=random.randint(0, 59)
+                            )
+                            fin = debut + timedelta(minutes=random.randint(30, 240))  # Durée aléatoire entre 30 minutes et 4 heures
+
+                            # Calculer la durée de la période
+                            duree = (fin - debut).total_seconds() / 3600  # Convertir en heures
+
+                            # Récupérer la puissance de l'équipement
+                            puissance = equipement.puissance  # Supposons que le champ pour la puissance soit 'puissance'
+
+                            # Calculer la consommation
+                            consommation = duree * puissance
+
+                            # Afficher les détails pour le débogage
+                            print("temps debut:", debut, "temps fin:", fin, "consommation:", consommation)
+
+                            # Créer une nouvelle période d'activité
+                            PeriodeActivite.objects.create(
+                                tempsDebut=debut,
+                                tempsFin=fin,
+                                Equipement=equipement,
+                                consommation=consommation
+                            )
+
+
             return Response('done', status=status.HTTP_200_OK)
-        except Batiment.DoesNotExist:
+
+      except Batiment.DoesNotExist:
             return Response('Batiment not found', status=status.HTTP_404_NOT_FOUND)
+
+      except Exception as e:
+            # Log l'exception si nécessaire
+            return Response(f'Error: {str(e)}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+   
 class desactiver_batiment(APIView):
   def post(self, request, *args, **kwargs):
         data = request.data
         param1 = data.get('batimentId')
-        
+        date =data.get('date')
+        now = timezone.now
+        print("maintenant", now )
+        #date.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
         try:
             # Désactiver le bâtiment
             batiment = Batiment.objects.get(id=param1)
@@ -3901,9 +3781,16 @@ class desactiver_batiment(APIView):
                     equipements = Equipement.objects.filter(zoneE=zone.id)
 
                     for equipement in equipements:
-                        # Supprimer toutes les périodes d'activité de l'équipement
-                        PeriodeActivite.objects.filter(Equipement=equipement.id).delete()
+                        PeriodeActivite.objects.filter(
+                            Equipement=equipement,
+                            tempsDebut__gte=date
+                        ).delete()
 
+                        PeriodeActivite.objects.filter(
+                            Equipement=equipement,
+                            tempsFin__gte=date
+                        ).delete()
+                        
             return Response('done', status=status.HTTP_200_OK)
 
         except Batiment.DoesNotExist:
@@ -3912,3 +3799,461 @@ class desactiver_batiment(APIView):
         except Exception as e:
             # Log l'exception si nécessaire
             return Response(f'Error: {str(e)}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+######################### act des etage ######################################
+
+class activer_etage(APIView):
+  def post(self, request, *args, **kwargs):
+      data = request.data
+      param1 = data.get('batimentId')
+        
+      try:
+       
+            
+            etages = Etage.objects.get(id=param1)
+
+            
+            etages.active=True
+            etages.save()
+                # Obtenir toutes les zones de l'étage
+            zones = Zone.objects.filter(etageZ=etages.id,active=False)
+
+            for zone in zones:
+                    zone.active=True
+                    zone.save()
+                    # Obtenir tous les équipements de la zone
+                    equipements = Equipement.objects.filter(zoneE=zone.id)
+
+                    for equipement in equipements:
+                        print(equipement,equipement.nom)
+                        # Supprimer toutes les périodes d'activité de l'équipement
+                        
+                       # Utiliser la date et l'heure courantes
+                        current_datetime = timezone.now()
+                        print("date",current_datetime)
+                        # Générer un nombre aléatoire de périodes d'activité pour l'équipement pour la date courante
+                        num_activites = random.randint(1, 3)
+
+                        for _ in range(num_activites):
+                            # Générer des dates de début et de fin aléatoires pour la journée
+                            debut = current_datetime + timedelta(
+                                hours=random.randint(0, 23),
+                                minutes=random.randint(0, 59),
+                                seconds=random.randint(0, 59)
+                            )
+                            fin = debut + timedelta(minutes=random.randint(30, 240))  # Durée aléatoire entre 30 minutes et 4 heures
+
+                            # Calculer la durée de la période
+                            duree = (fin - debut).total_seconds() / 3600  # Convertir en heures
+
+                            # Récupérer la puissance de l'équipement
+                            puissance = equipement.puissance  # Supposons que le champ pour la puissance soit 'puissance'
+
+                            # Calculer la consommation
+                            consommation = duree * puissance
+
+                            # Afficher les détails pour le débogage
+                            print("temps debut:", debut, "temps fin:", fin, "consommation:", consommation)
+
+                            # Créer une nouvelle période d'activité
+                            PeriodeActivite.objects.create(
+                                tempsDebut=debut,
+                                tempsFin=fin,
+                                Equipement=equipement,
+                                consommation=consommation
+                            )
+
+
+            return Response('done', status=status.HTTP_200_OK)
+
+      except Batiment.DoesNotExist:
+            return Response('Batiment not found', status=status.HTTP_404_NOT_FOUND)
+
+      except Exception as e:
+            # Log l'exception si nécessaire
+            return Response(f'Error: {str(e)}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+   
+class desactiver_etage(APIView):
+  def post(self, request, *args, **kwargs):
+        data = request.data
+        param1 = data.get('batimentId')
+        date =data.get('date')
+        now = timezone.now
+        print("maintenant", now )
+        #date.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+        try:
+            # Désactiver le bâtiment
+            etages = Etage.objects.get(id=param1)
+
+            
+            etages.active=False
+            etages.save()
+            print(etages.active)
+                # Obtenir toutes les zones de l'étage
+            zones = Zone.objects.filter(etageZ=etages.id)
+
+            for zone in zones:
+
+                    zone.active=False
+                    zone.save()
+                    # Obtenir tous les équipements de la zone
+                    equipements = Equipement.objects.filter(zoneE=zone.id)
+
+                    for equipement in equipements:
+                        PeriodeActivite.objects.filter(
+                            Equipement=equipement,
+                            tempsDebut__gte=date
+                        ).delete()
+
+                        PeriodeActivite.objects.filter(
+                            Equipement=equipement,
+                            tempsFin__gte=date
+                        ).delete()
+                        
+            return Response('done', status=status.HTTP_200_OK)
+
+        except Batiment.DoesNotExist:
+            return Response('Batiment not found', status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            # Log l'exception si nécessaire
+            return Response(f'Error: {str(e)}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+######################### act  des zone #####################################
+
+class activer_zone(APIView):
+  def post(self, request, *args, **kwargs):
+      data = request.data
+      param1 = data.get('batimentId')
+        
+      try:
+            # Désactiver le bâtiment
+  
+                # Obtenir toutes les zones de l'étage
+                    zones = Zone.objects.get(id=param1)
+
+                    zones.active=True
+                    zones.save()
+                    # Obtenir tous les équipements de la zone
+                    equipements = Equipement.objects.filter(zoneE=zones.id)
+
+                    for equipement in equipements:
+                        print(equipement,equipement.nom)
+                        # Supprimer toutes les périodes d'activité de l'équipement
+                        
+                       # Utiliser la date et l'heure courantes
+                        current_datetime = timezone.now()
+                        print("date",current_datetime)
+                        # Générer un nombre aléatoire de périodes d'activité pour l'équipement pour la date courante
+                        num_activites = random.randint(1, 3)
+
+                        for _ in range(num_activites):
+                            # Générer des dates de début et de fin aléatoires pour la journée
+                            debut = current_datetime + timedelta(
+                                hours=random.randint(0, 23),
+                                minutes=random.randint(0, 59),
+                                seconds=random.randint(0, 59)
+                            )
+                            fin = debut + timedelta(minutes=random.randint(30, 240))  # Durée aléatoire entre 30 minutes et 4 heures
+
+                            # Calculer la durée de la période
+                            duree = (fin - debut).total_seconds() / 3600  # Convertir en heures
+
+                            # Récupérer la puissance de l'équipement
+                            puissance = equipement.puissance  # Supposons que le champ pour la puissance soit 'puissance'
+
+                            # Calculer la consommation
+                            consommation = duree * puissance
+
+                            # Afficher les détails pour le débogage
+                            print("temps debut:", debut, "temps fin:", fin, "consommation:", consommation)
+
+                            # Créer une nouvelle période d'activité
+                            PeriodeActivite.objects.create(
+                                tempsDebut=debut,
+                                tempsFin=fin,
+                                Equipement=equipement,
+                                consommation=consommation
+                            )
+
+
+                    return Response('done', status=status.HTTP_200_OK)
+
+      except Batiment.DoesNotExist:
+            return Response('Batiment not found', status=status.HTTP_404_NOT_FOUND)
+
+      except Exception as e:
+            # Log l'exception si nécessaire
+            return Response(f'Error: {str(e)}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import ProfileUser  # Assurez-vous que vous importez correctement votre modèle
+
+class changer_role(APIView):
+    def post(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            param1 = data.get('userId')
+            param2 = data.get('role')
+            user_profile = ProfileUser.objects.get(userId=param1)
+            user_profile.role = param2
+            user_profile.save()
+            return Response({'message': 'Role updated successfully'}, status=status.HTTP_200_OK)
+        except ProfileUser.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            # Log the exception if necessary
+            return Response({'error': f'Error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+class supprimer_periode(APIView):
+     def post(self, request, *args, **kwargs):
+        data = request.data
+        param1 = data.get('equipementid')
+        equipement=Equipement.objects.get(id=param1)
+        #date.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+        try:
+            # Désactiver le bâtiment
+                   
+                    # Obtenir tous les équipements de la zone
+            PeriodeActivite.objects.filter(Equipement=equipement).delete()
+
+                      
+            return Response('done', status=status.HTTP_200_OK)
+
+        except Batiment.DoesNotExist:
+            return Response('Batiment not found', status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            # Log l'exception si nécessaire
+            return Response(f'Error: {str(e)}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import HistoriqueADzone, Batiment  # Adjust the import according to your models
+
+
+class desactiver_zone(APIView):
+  def post(self, request, *args, **kwargs):
+        data = request.data
+        param1 = data.get('batimentId')
+        date =data.get('date')
+        now = timezone.now
+        print("maintenant", now )
+        #date.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+        try:
+            # Désactiver le bâtiment
+                    zones = Zone.objects.get(id=param1)
+
+                    zones.active=False
+                    zones.save()
+                    # Obtenir tous les équipements de la zone
+                    equipements = Equipement.objects.filter(zoneE=zones.id)
+
+                    for equipement in equipements:
+                        PeriodeActivite.objects.filter(
+                            Equipement=equipement,
+                            tempsDebut__gte=date
+                        ).delete()
+
+                        PeriodeActivite.objects.filter(
+                            Equipement=equipement,
+                            tempsFin__gte=date
+                        ).delete()
+                        
+                    return Response('done', status=status.HTTP_200_OK)
+
+        except Batiment.DoesNotExist:
+            return Response('Batiment not found', status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            # Log l'exception si nécessaire
+            return Response(f'Error: {str(e)}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+############################## prediction etape1: extraction données###################################
+import pandas as pd
+import os
+from datetime import datetime
+from django.conf import settings
+from.models import PeriodeActivite  # Remplacez 'myapp' par le nom de votre application
+
+def export_to_csv():
+    # Extraction des données de la table PeriodeActivite
+    periodes = PeriodeActivite.objects.select_related('Equipement').all()
+    data = []
+
+    for periode in periodes:
+        if periode.consommation is not None and periode.Equipement is not None:
+            data.append({
+                'date_debut': periode.tempsDebut,
+                'date_fin': periode.tempsFin,
+                'consommation': periode.consommation,
+                'puissance': periode.Equipement.puissance,
+                'type': periode.Equipement.type
+            })
+
+    # Conversion des données en DataFrame pandas
+    df = pd.DataFrame(data)
+    df['date_debut'] = pd.to_datetime(df['date_debut'])
+    df['date_fin'] = pd.to_datetime(df['date_fin'])
+    df['duration'] = (df['date_fin'] - df['date_debut']).dt.total_seconds() / 3600
+
+    # Enregistrement du DataFrame en fichier CSV
+    csv_file_path = os.path.join('media', 'exported_data.csv')
+    df.to_csv(csv_file_path, index=False)
+    
+    return csv_file_path
+from django.http import HttpResponse
+
+
+def export_csv_view():
+    csv_file_path = export_to_csv()
+    
+           
+#export_csv_view()
+
+
+################################ genere data after prblm ##########################
+def générerHum(date, prec, minH, maxH):
+
+  if round(random.uniform(0, 1), 0)==1 :
+    return prec
+
+  T='0'
+  i=1
+  j=0
+  if(j<10):
+    T =(round(random.uniform(minH, maxH-0.2), 1))
+    while(i<10 and prec!=0 and (float(T)>prec+0.5 or float(T)<prec-0.5)):
+      T =(round(random.uniform(minH, maxH-0.2), 1))
+      i=i+1
+    j=j+1
+  else:
+    T =(round(random.uniform(minH, maxH), 1))
+    while(i<10 and prec!=0 and (float(T)>prec+0.5 or float(T)<prec-0.5)):
+      T =(round(random.uniform(minH, maxH), 1))
+      i=i+1
+    j=0
+
+  return T
+def générerTemp(date, prec, minT, maxT):
+
+  if round(random.uniform(0, 1), 0)==1 :
+    return prec
+
+  T='0'
+  i=1 # il tente maximum 10 fois pour avoir une valeur proche à la précédente
+  if int(date.strftime('%m')) in mois_chauds:
+    T =(round(random.uniform(minT+0.2, maxT), 1))
+    while(i<10 and prec!=0 and (float(T)>prec+0.5 or float(T)<prec-0.5)):
+      T =(round(random.uniform(minT+0.2, maxT), 1))
+      i=i+1
+
+  elif int(date.strftime('%m')) in mois_froids:
+      T =(round(random.uniform(minT, maxT-0.2), 1))
+      while(i<10 and prec!=0 and float(T)>prec+0.5 and float(T)<prec-0.5):
+        T =(round(random.uniform(minT, maxT-0.2), 1))
+        i=i+1
+
+  elif int(date.strftime('%m')) in mois_frais:
+      T =(round(random.uniform(minT, maxT), 1))
+      while(i<10 and prec!=0 and float(T)>prec+0.5 and float(T)<prec-0.5):
+        T =(round(random.uniform(minT, maxT), 1))
+        i=i+1
+
+  return T
+from django.http import JsonResponse
+from django.core.files import File
+import json
+import os
+from datetime import datetime, timedelta
+import random
+
+def generateJSON(minT,maxT,minH,maxH):
+      data = {}
+
+      # Définir la période de temps
+      date1 = datetime(2023, 7,1, 1, 0, 0, 0)
+      date2 = datetime(2023, 12, 31, 23, 59, 0)
+      delta = timedelta(minutes=1)
+
+      c=1
+      # Générer des données pour chaque jour
+       # Utilisez request.data pour récupérer les données du corps de la requête
+     
+      param2 = minT
+      
+      
+
+      while date1 <= date2:
+        if(c==1):
+          prec1=22
+          prec2=40
+          c=c+1
+
+        prec1 = float(générerTemp(date1, prec1,minT,maxT))
+        prec2 = float(générerHum(date1,prec2,minH,maxH))
+                  
+                  
+
+        data[date1.strftime('%Y-%m-%d %H:%M:%S')] = {
+            'temperature': générerTemp(date1, prec1,minT,maxT),
+            'humidite': générerHum(date1, prec2,minH,maxH),
+            'presence': random.randint(0,1)
+                      
+                    
+        }
+
+        date1 += delta
+
+      return data
+def generateJSONALL(id):
+
+      zone=Zone.objects.get(id=id)
+      
+      donnees_aleatoires = generateJSON(zone.minT,zone.maxT,zone.minH,zone.maxH)
+      json_data = json.dumps(donnees_aleatoires, indent=2)
+
+      # Définir le chemin du fichier dans le dossier media
+      chemin_fichier = os.path.join('media', 'prediction' + str(zone.id) + '.json')
+
+      # Écrire les données JSON dans le fichier
+      with open(chemin_fichier, 'w') as fichier:
+          fichier.write(json_data)
+
+""" zones = Zone.objects.all()
+for z in zones:
+  generateJSONALL(z.id)
+ """
+#################### copier json to json
+
+""" def generateJSONALL(id):
+    prec = 40
+    data_new = {}
+    data={}
+    zone = Zone.objects.get(id=id)
+    chemin_fichier = os.path.join('media', f'donnees{zone.id}.json')
+    if os.path.exists(chemin_fichier):
+        with open(chemin_fichier, 'r') as fichier:
+            data = json.load(fichier)
+       
+            for timestamp, values in data.items():
+                temperature = values['temperature']
+                print("before",values['humidite'])
+              
+                # Ajoutez ici la logique pour vérifier la température et l'humidité et contrôler le chauffage/climatisation
+                #print('--------------------la temperature :  ', temperature, 'maxT :  ', equi.zoneE.maxT)
+                data_new[timestamp] = {
+                    'temperature': temperature,
+                    'humidite': générerHum(timestamp, prec, zone.minH, zone.maxH),
+                    'presence': random.randint(0,1)
+                              
+                            
+                }
+                print("after",data_new[timestamp]['humidite'])
+
+        chemin_fichier = os.path.join('media', f'solution{zone.id}.json')
+        with open(chemin_fichier, 'w') as fichier:
+            json.dump(data_new, fichier, indent=4)
+    else:
+        print(f"Le fichier de données pour la zone {zone.id} n'existe pas.")
+Zones= Zone.objects.all()
+for z in Zones:
+  generateJSONALL(z.id) """

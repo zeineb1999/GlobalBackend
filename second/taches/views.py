@@ -282,7 +282,7 @@ class AlertConsumer(WebsocketConsumer):
                 if date_recherchee in contenu_json:
                     temperature = contenu_json[date_recherchee]["temperature"]
                     humidite = contenu_json[date_recherchee]["humidite"]
-                    print("local", local.id,"temperature",temperature,"humidité",humidite)
+                    print("local", local.id,"temperature",temperature,"humidité",humidite,"date", date_recherchee)
                     if temperature < local.minT or temperature > local.maxT :
                         print('cas temperature : ', temperature, 'local : ', local)
                         self.create_alert(local, temperature, "temperature")
@@ -297,7 +297,7 @@ class AlertConsumer(WebsocketConsumer):
 
               localId=local,
               valeur=temperature,
-             
+              
               text=f"Alert! Temperature: {temperature}  out of range."
           )
         elif type == "humidite":
@@ -334,6 +334,7 @@ def notification_post_save(sender, instance, created, **kwargs):
 #------------------------------------------------------- alerte to maintenance ---------------------------
 class UserIDChangeConsumer(WebsocketConsumer):
   def connect(self):
+    print("connexion")
     self.room_name = 'user_id_change'
     self.room_group_name = self.room_name
     async_to_sync(self.channel_layer.group_add)(
@@ -360,8 +361,9 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .serializers import AlerteSerializer  # Assurez-vous d'importer votre serializer
 
-@receiver(pre_save, sender=Alerte)
+""" @receiver(pre_save, sender=Alerte)
 def notify_user_id_change(sender, instance, **kwargs):
+    print("hereeeeeeeeeeeeeeeeeeee")
     if instance.pk:
         previous = Alerte.objects.get(pk=instance.pk)
         if previous.userID != instance.userID: 
@@ -375,7 +377,41 @@ def notify_user_id_change(sender, instance, **kwargs):
                     'message': serialize.data
                 }
             )
-           
+   """
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
+from .models import Alerte
+from .serializers import AlerteSerializer
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
+@receiver(pre_save, sender=Alerte)
+def notify_user_id_change(sender, instance, **kwargs):
+    print("Signal received for instance:", instance.pk)
+    if instance.pk:
+        print("dknsmgnjdfb*******************")
+        try:
+            previous = Alerte.objects.get(pk=instance.pk)
+            print("dfhfhgf",previous)
+        except Alerte.DoesNotExist:
+            print("Previous instance does not exist, skipping signal.")
+            return
+        if previous.userID != instance.userID:
+            print('userID modified, notification sent')
+            serialize = AlerteSerializer(instance)
+            channel_layer = get_channel_layer()
+            group_name = 'user_id_change'
+            async_to_sync(channel_layer.group_send)(
+                group_name, {
+                    'type': 'user_id_change_message',
+                    'message': serialize.data
+                }
+            )
+""" alerte =Alerte.objects.get(id=237)
+user = User.objects.get(id=23)
+alerte.userID=user
+alerte.save()   """
+
 #------------------------------------------------------- FIN alerte to maintenance ---------------------------
   # broadcast Notification; Individual + community
 #************************************** fin web socket *****************************
@@ -1756,8 +1792,8 @@ from django.db.models import Q
 """ 
 equipements = Equipement.objects.exclude(
     Q(nom__icontains='humidificateur') |
-    Q(nom__icontains='chauffage') |
-    Q(nom__icontains='climatiseur') |
+    Q(nom__icontains='hauffage') |
+    Q(nom__icontains='limatiseur') |
     Q(nom__icontains='lampe') |
     Q(nom__icontains='led')
 )

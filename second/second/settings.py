@@ -102,7 +102,7 @@ EMAIL_HOST_PASSWORD = 'ykhnnkrqgvqbewcw'
 
 WSGI_APPLICATION = 'second.wsgi.application'
 
-"""CHANNEL_LAYERS = {
+CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
@@ -110,14 +110,14 @@ WSGI_APPLICATION = 'second.wsgi.application'
         },
     },
 }
-""" 
+"""
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
         
     }
 } 
-
+"""
 ASGI_APPLICATION = 'second.asgi.application'
 
 

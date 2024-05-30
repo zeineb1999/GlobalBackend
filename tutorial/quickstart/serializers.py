@@ -89,6 +89,10 @@ class PeriodeActiviteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PeriodeActivite
         fields = ('id','tempsDebut', 'tempsFin', 'Equipement','consommation')
+class PeriodeActiviteLastYearSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PeriodeActiviteLastYear
+        fields = ('id','tempsDebut', 'tempsFin', 'Equipement','consommation')
 
 # pour recuperer tous:
 
@@ -137,3 +141,18 @@ class EquipementArchiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = EquipementArchive
         fields = ('id','nom',  'categorie','type','puissance','zoneE','date')
+
+class HistoriqueADbatimentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model =HistoriqueADbatiment
+        fields=('id','option','batimentId','date','userId','raison')
+class HistoriqueADetageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model =HistoriqueADetage
+        fields=('id','option','etageId','date','userId','raison')
+        
+class HistoriqueADzoneSerializer(serializers.ModelSerializer):
+    class Meta:
+        model =HistoriqueADzone
+        fields=('id','option','zoneId','date','userId','raison')
+        
