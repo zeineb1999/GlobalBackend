@@ -712,20 +712,21 @@ def optimize_consumption():
     #il y aura 100 individus dans chaque génération de la population.
     #l'algorithme fonctionnera sur 50 générations.
     # 20 individus seront sélectionnés comme parents dans chaque génération.
-    best_solution = genetic_algorithm(100, 50, 20, equipements, start_date, end_date)
+    best_solution = genetic_algorithm(200, 100, 20, equipements, start_date, end_date)
+    
     for debut, fin, equipement in best_solution:
         consommation = (fin - debut).total_seconds() / 3600 * equipement.puissance
-        PeriodeActivite.objects.create(
+        """ PeriodeActivite.objects.create(
             tempsDebut=debut,
             tempsFin=fin,
             Equipement=equipement,
             consommation=consommation
-        )
+        ) """
+        print("temps debut",debut,"temps fin",fin,"equi",equipement,"conso",consommation)
+
 
 # Appeler la fonction principale
 #optimize_consumption()
-
-
 #********************************************* fin optimisation algorithme genetique ********************
 #       ******************************************* GET API views *******************************************
 @api_view(['GET'])
@@ -4096,8 +4097,10 @@ def export_to_csv():
     df['duration'] = (df['date_fin'] - df['date_debut']).dt.total_seconds() / 3600
 
     # Enregistrement du DataFrame en fichier CSV
-    csv_file_path = os.path.join('media', 'exported_data.csv')
-    df.to_csv(csv_file_path, index=False)
+    csv_file_path = os.path.join('media', 'exported_data_prediction.csv')
+    if os.path.exists(csv_file_path):
+        df.to_csv(csv_file_path, mode='a', header=False, index=False)  # Ajouter sans l'en-tête
+  
     
     return csv_file_path
 from django.http import HttpResponse
@@ -4109,6 +4112,215 @@ def export_csv_view():
            
 #export_csv_view()
 
+################################ entrainement #############################
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+import joblib
+#Charger les données
+chemin_fichier = os.path.join('media', 'Histo.csv')  # Chemin du fichier CSV
+df = pd.read_csv(chemin_fichier, delimiter=';')
+
+
+#Prétraiter les données
+date_format = "%d/%m/%Y %H:%M"
+df['date_debut'] = pd.to_datetime(df['date_debut'], format=date_format, dayfirst=True)
+df['date_fin'] = pd.to_datetime(df['date_fin'], format=date_format, dayfirst=True)
+df['duration'] = (df['date_fin'] - df['date_debut']).dt.total_seconds() / 3600
+
+df['year'] = df['date_debut'].dt.year
+df['month'] = df['date_debut'].dt.month
+df['day'] = df['date_debut'].dt.day
+df['hour'] = df['date_debut'].dt.hour
+
+
+
+#print(df['date_debut'],df['date_fin'])
+
+features = ['year', 'month', 'day', 'hour', 'duration', 'puissance', 'type']
+X = df[features]
+y = df['consommation']
+
+# Convertir les caractéristiques catégorielles en variables numériques
+X = pd.get_dummies(X, columns=['type'])
+
+#print(X.columns)
+
+# Diviser les données
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+
+
+# Entraîner le modèle
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+
+#print(X_train.columns)
+
+
+# Évaluer le modèle
+y_pred = model.predict(X_test)
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+joblib.dump(model, 'linear_regression_model_energy.pkl')
+
+
+""" 
+print(f'Erreur quadratique moyenne (MSE) : {mse}')
+print(f'Coefficient de détermination (R^2) : {r2}')
+
+# Exemple de prédiction
+nouvelle_donnee = pd.DataFrame({
+    'year': [2025],
+    'month': [1],
+    'day': [1],
+    'hour': [10],
+    'duration': [5.0],
+    'puissance': [10.0],
+    'type_Chauffages':[0],
+    'type_Climatiseurs': [0],  # Remplacez les valeurs des caractéristiques catégorielles selon votre exemple
+    'type_Déshumidificateurs': [0],
+    'type_Eclairage': [0],
+    'type_Equipements de bureaux': [0],
+    'type_Equipements de cuisine': [0],
+    'type_Equipements médicaux': [0],
+    'type_Prises a  usage personnel': [0],
+    'type_Réfrigérateurs et Congélateurs': [0],
+    'type_équipements de Confort et de Divertissement': [0]
+    
+})
+ 
+prediction = model.predict(nouvelle_donnee)
+print(f'Prédiction de consommation : {prediction[0]}')
+ """
+# Étape 6 : Faire des prédictions futures
+# Exemple de prédiction
+'''
+nouvelle_donnee = pd.DataFrame({
+    'year': [2024],
+    'month': [7],
+    'day': [1],
+    'hour': [10],
+    'duration': [2.0],
+    'puissance': [1000.0],
+    'type_Equipements de bureaux': [1],
+    'type_Equipements de cuisine': [0],
+    'type_Eclairage': [0],
+    'type_Equipements médicaux': [0]
+})
+prediction = model.predict(nouvelle_donnee)
+print(f'Prédiction de consommation : {prediction[0]}') '''
+################################### implementation de la methode prediction ######################
+# quickstart/views.py
+import joblib
+import numpy as np
+from django.http import JsonResponse
+from rest_framework.decorators import api_view
+
+# Charger le modèle au démarrage du serveur
+model = joblib.load('linear_regression_model_energy.pkl')
+
+@api_view(['POST'])
+def predict_consumption(request):
+    try:
+        data = request.data
+        year = data.get('year')
+        month = data.get('month')
+        day = data.get('day')
+        hour = data.get('hour')
+        duration = data.get('duration')
+        puissance = data.get('puissance')
+        type_chauffages = data.get('type_Chauffages', 0)
+        type_climatiseurs = data.get('type_Climatiseurs', 0)
+        type_deshumidificateurs = data.get('type_Déshumidificateurs', 0)
+        type_eclairage = data.get('type_Eclairage', 0)
+        type_equipements_bureaux = data.get('type_Equipements de bureaux', 0)
+        type_equipements_cuisine = data.get('type_Equipements de cuisine', 0)
+        type_equipements_medicaux = data.get('type_Equipements médicaux', 0)
+        type_prises_personnel = data.get('type_Prises a  usage personnel', 0)
+        type_refrigerateurs = data.get('type_Réfrigérateurs et Congélateurs', 0)
+        type_confort_divertissement = data.get('type_équipements de Confort et de Divertissement', 0)
+
+        # Construire l'entrée pour la prédiction
+        input_features = np.array([[year, month, day, hour, duration, puissance, type_chauffages,
+                                    type_climatiseurs, type_deshumidificateurs, type_eclairage,
+                                    type_equipements_bureaux, type_equipements_cuisine, type_equipements_medicaux,
+                                    type_prises_personnel, type_refrigerateurs, type_confort_divertissement]])
+
+        # Assurez-vous que les noms de colonnes correspondent exactement à ceux utilisés lors de l'entraînement du modèle
+        input_features_df = pd.DataFrame(input_features, columns=X.columns)
+
+# Faire une prédiction
+        prediction = model.predict(input_features_df)
+        #print(prediction)
+
+
+        return JsonResponse({'predicted_consumption': prediction[0]})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+################################# methode prediction par mois ########################
+def predict_consumption_equipement(year, month, day, hour, duration, puissance, type):
+    try:
+        # Obtenez les types d'équipement
+        print(year,month,day,hour,duration,puissance,type)
+        type_chauffages = type == 'type_Chauffages'
+        type_climatiseurs = type == 'type_Climatiseurs'
+        type_deshumidificateurs = type == 'type_Déshumidificateurs'
+        type_eclairage = type == 'type_Eclairage'
+        type_equipements_bureaux = type == 'type_Equipements de bureaux'
+        type_equipements_cuisine = type == 'type_Equipements de cuisine'
+        type_equipements_medicaux = type == 'type_Equipements médicaux'
+        type_prises_personnel = type == 'type_Prises a  usage personnel'
+        type_refrigerateurs = type == 'type_Réfrigérateurs et Congélateurs'
+        type_confort_divertissement = type == 'type_équipements de Confort et de Divertissement'
+
+        # Construire l'entrée pour la prédiction
+        input_features = np.array([[year, month, day, hour, duration, puissance, type_chauffages,
+                                    type_climatiseurs, type_deshumidificateurs, type_eclairage,
+                                    type_equipements_bureaux, type_equipements_cuisine, type_equipements_medicaux,
+                                    type_prises_personnel, type_refrigerateurs, type_confort_divertissement]])
+
+        # Assurez-vous que les noms de colonnes correspondent exactement à ceux utilisés lors de l'entraînement du modèle
+        input_features_df = pd.DataFrame(input_features, columns=X.columns)
+
+        # Faire une prédiction
+        prediction = model.predict(input_features_df)
+        return prediction[0]
+    except Exception as e:
+        return str(e)
+
+import joblib
+import numpy as np
+import pandas as pd
+from django.http import JsonResponse
+from rest_framework.decorators import api_view
+
+# Charger le modèle au démarrage du serveur
+model = joblib.load('linear_regression_model_energy.pkl')
+
+@api_view(['POST'])
+def predict_consumption_mois(request):
+    try:
+        data = request.data
+        year = data.get('year')
+        month = data.get('month')
+        print('year',year,'month',month)
+        equipements = Equipement.objects.all()
+        consommation = 0
+        for equipement in equipements:
+            print(equipement.id)
+            # Prédire la consommation pour chaque équipement
+            consommation += predict_consumption_equipement(year, month, 1,1, 720, equipement.puissance, equipement.type)
+            print('consommation',consommation)
+        return JsonResponse({'predicted_consumption': consommation})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
 
 ################################ genere data after prblm ##########################
 def générerHum(date, prec, minH, maxH):

@@ -107,7 +107,9 @@ urlpatterns = [
     path('desactiverZone/',desactiver_zone.as_view(),name='desactiverzone'),
     path('changerRole/',changer_role.as_view(),name='changerRole'),
     path('deletePeriode/',supprimer_periode.as_view(),name='supprimer_periode'),
-    path('dateDesactivation/<int:zoneId>/',views.dateDesactivation,name='dateDesactivation')
+    path('dateDesactivation/<int:zoneId>/',views.dateDesactivation,name='dateDesactivation'),
+    path('predict/', predict_consumption, name='predict_consumption'),
+    path('prediction_mois/',predict_consumption_mois,name='predict_mois')
    ]
 
 urlpatterns += router.urls
