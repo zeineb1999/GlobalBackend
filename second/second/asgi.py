@@ -14,7 +14,7 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 from taches.urls import websocket_urlpatterns  # Importez les routes WebSocket de votre application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tutorial.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'second.settings')
 
 # Obtenez l'application ASGI de Django
 django_asgi_application = get_asgi_application()

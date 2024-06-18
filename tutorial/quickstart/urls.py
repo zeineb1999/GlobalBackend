@@ -26,13 +26,14 @@ router.register(r'batiment', views.BatimentViewSet)
 router.register(r'alerte', views.AlerteViewSet)
 router.register(r'periode-activite', views.PeriodeActiviteViewSet)
 router.register(r'rapport', views.RapportViewSet)
-router.register(r'sauvegarde',views.SauvegardeViewSet)
+
 router.register(r'historique',views.HistoriqueViewSet)
 router.register(r'historiqueUser',views.HistoriqueUserViewSet)
 router.register(r'equipementarchive',views.EquipementArchiveViewSet)
 router.register(r'historiqueBatiment',views.HistoriqueADbatimentViewSet)
 router.register(r'historiqueEtage',views.HistoriqueADetageViewSet)
 router.register(r'historiqueZone',views.HistoriqueADzoneViewSet)
+router.register(r'equipementajouter',views.EquipementAjouterViewSet)
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
@@ -92,11 +93,17 @@ urlpatterns = [
     path('getTenAlertes', views.getTenAlertes, name='getTenAlertes'),
    
     path('rapportByEquipement/<int:equipementId>/', views.getRapportByEquipement, name='getAlertes'),
+    path('equipementRemplacement/<int:rapportId>/', views.getEquipementRemplacement, name='getAlertes'),
     path('stop-method/', stop_method_view, name='stop-method'),
     path('start-method/', start_method_view, name='start-method'),
     path('rapportByAlerte/<int:alerteId>/', views.getRapportByAlerte, name='getRapports'),
     path('initialData/', initialData.as_view(), name='initialData'),
     path('decision/', equipementdecision.as_view(), name='equipementdecision'),
+    path('archive/', equipementarchiver.as_view(), name='equipementdecision'),
+  
+    path('cout/', equipementcout.as_view(), name='equipementcout'),
+   
+    path('approvation/', equipementapprovation.as_view(), name='equipementdecision'),
     path('equipement/<int:equipement_id>/periodes', getPeriodeParEquipement.as_view(), name='getPeriodeParEquipement'),
     path('historiqueUtilisateur/', historiqueUtilisateur.as_view(), name='historiqueUtilisateur'),
     path('activerBatiment/',activer_batiment.as_view(),name='activerBatiment'),

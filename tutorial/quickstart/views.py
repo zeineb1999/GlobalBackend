@@ -21,9 +21,7 @@ from rest_framework import generics
 class RapportViewSet(viewsets.ModelViewSet):
     queryset = Rapport.objects.all()
     serializer_class = RapportSerializer
-class SauvegardeViewSet(viewsets.ModelViewSet):
-    queryset = Sauvegarde.objects.all()
-    serializer_class = SauvegardeSerializer
+
 class HistoriqueViewSet(viewsets.ModelViewSet):
     queryset = Historique.objects.all()
     serializer_class = HistoriqueSerializer
@@ -87,7 +85,7 @@ class HopitalConsommationPendantMoisNonCritique(APIView):
 class HopitalConsommationPendantMoisAll(APIView):
     def get(self, request):
         
-            date_debut = '2024-05-01 00:00:00'
+            date_debut = '2024-06-01 00:00:00'
             date_fin = datetime.now().strftime('%Y-%m-%d %H:%M:00')
             print(date_debut, date_fin)
             equipements = Equipement.objects.filter(categorie='critique')
@@ -107,7 +105,27 @@ class HopitalConsommationPendantMoisAll(APIView):
             }
             
             return Response(data, status=status.HTTP_200_OK)
+class equipementcout(APIView):
+
+    def post(self, request, *args, **kwargs):
+        data = request.data  # Utilisez request.data pour récupérer les données du corps de la requête
+        id = data.get('id')
+        print("id ,"+str(id))
+
+        #print("email ,"+email)
+
+        cout = data.get('cout')
+      
+        Rapport.objects.filter(id=id).update(cout=cout)
+        return JsonResponse({'message': 'Le statut de l`equipement a été mis à jour'})
     
+class equipementarchiver(APIView):
+
+    def post(self, request, *args, **kwargs):
+        data = request.data  # Utilisez request.data pour récupérer les données du corps de la requête
+        id = data.get('id')
+        Equipement.objects.filter(id=id).update(archive="oui")
+        return JsonResponse({'message': 'Le statut de l`equipement a été mis à jour'})
 class equipementdecision(APIView):
 
     def post(self, request, *args, **kwargs):
@@ -121,7 +139,19 @@ class equipementdecision(APIView):
         print("decision ,"+str(decision))
         Rapport.objects.filter(id=id).update(decision=decision)
         return JsonResponse({'message': 'Le statut de l`equipement a été mis à jour'})
+class equipementapprovation(APIView):
 
+    def post(self, request, *args, **kwargs):
+        data = request.data  # Utilisez request.data pour récupérer les données du corps de la requête
+        id = data.get('id')
+        print("id ,"+str(id))
+
+        #print("email ,"+email)
+
+        approuve = data.get('approuve')
+        
+        Rapport.objects.filter(id=id).update(approuve=approuve)
+        return JsonResponse({'message': 'Le statut de l`equipement a été mis à jour'})
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -221,6 +251,13 @@ class EquipementViewSet(viewsets.ModelViewSet):
         serializer =EquipementSerializer(equipements, many=True)
         return Response(serializer.data)
 
+class EquipementAjouterViewSet(viewsets.ModelViewSet):
+    queryset = EquipementAjouter.objects.all()
+    serializer_class = EquipementAjouterSerializer
+    def list(self, request, *args, **kwargs):
+        equipements = EquipementAjouter.objects.all()
+        serializer =EquipementAjouterSerializer(equipements, many=True)
+        return Response(serializer.data)
 
 class BatimentViewSet(viewsets.ModelViewSet):
     queryset = Batiment.objects.all()
@@ -792,6 +829,20 @@ def equipements_by_zone(request, zone_id):
     except Equipement.DoesNotExist:
         # Si la zone spécifiée n'existe pas, retourner une erreur 404
         return Response(status=status.HTTP_404_NOT_FOUND)
+@api_view(['GET'])   
+def  getEquipementRemplacement(request, rapportId):
+    try:
+        # Récupérer tous les rapports associés à l'equipement spécifique
+        equi = EquipementAjouter.objects.filter(rapport=rapportId)
+      
+        # Sérialiser les données des rapports
+        serializer = EquipementAjouterSerializer(equi, many=True)
+        
+        # Retourner la réponse avec les rapports sérialisés
+        return Response(serializer.data)
+    except Rapport.DoesNotExist:
+        # Si l'equipement spécifiée n'existe pas, retourner une erreur 404
+        return Response(status=status.HTTP_404_NOT_FOUND)   
 @api_view(['GET'])
 def getRapportByEquipement(request, equipementId):
     try:
@@ -979,8 +1030,8 @@ class EquipementsTotalConsommation(APIView):
                     'id': equipement.id,
                     'nom': equipement.nom,
                     'etat': equipement.etat,
-                    'consommation_W': consommation_totale,
-                    'consommation_kW': consommation_totale/1000,
+                    'consommation_W': consommation_totale*1000,
+                    'consommation_kW': consommation_totale,
                     'localId': equipement.zoneE.id,
                     'nomLocal': equipement.zoneE.nomLocal,
                     'typeLocal': equipement.zoneE.typeLocal,
@@ -1012,8 +1063,8 @@ class zonesTotalConsommation(APIView):
                     'numEtage': zone.etageZ.id,
                     'nomEtage': zone.etageZ.nomEtage,
                     'batiment': zone.etageZ.batimentId.nomBatiment,
-                    'consommation_W': consommation_totale,
-                    'consommation_kW': consommation_totale/1000
+                    'consommation_W': consommation_totale*1000,
+                    'consommation_kW': consommation_totale
                 })
                 #print('Zone_cons: ', zones_consommation, '\n')
 
@@ -1038,8 +1089,8 @@ class etagesTotalConsommation(APIView):
                     'nomEtage': etage.nomEtage,
                     'batimentId': etage.batimentId.id,
                     'nomBatiment': etage.batimentId.nomBatiment,
-                    'consommation_W': consommation_totale,
-                    'consommation_kW': consommation_totale / 1000
+                    'consommation_W': consommation_totale*1000,
+                    'consommation_kW': consommation_totale 
                 })
 
             #etages_consommation = sorted(etages_consommation, key=itemgetter('consommation_W'), reverse=True)
@@ -1057,8 +1108,8 @@ class batimentsTotalConsommation(APIView):
                 batiments_consommation.append({
                     'id': batiment.id,
                     'nomBatiment': batiment.nomBatiment,
-                    'consommation_W': consommation_totale,
-                    'consommation_kW': consommation_totale/1000
+                    'consommation_W': consommation_totale*1000,
+                    'consommation_kW': consommation_totale
                 })
                 #print('Zone_cons: ', batiments_consommation, '\n')
 
@@ -1098,8 +1149,8 @@ class EquipementsOnlyConsommationParPeriode(APIView):
                 consommation= equipement.calculerConsommationParPeriode(date_debut, date_fin)
                 equipements_consommation.append({
                     'id': equipement.id,
-                    'consommation_W': consommation,
-                    'consommation_kW': consommation/1000
+                    'consommation_W': consommation*1000,
+                    'consommation_kW': consommation
                 })
                 #print('* ', equipements_consommation[-1], '\n\n**')
             # Trier les équipements par consommation totale décroissante
@@ -1136,8 +1187,8 @@ class EquipementsConsommationParPeriode(APIView):
                     'batimentId': equipement.zoneE.etageZ.batimentId.id,
                     'dateDebut': date_debut,
                     'dateFin': date_fin,
-                    'consommation_W': consommation,
-                    'consommation_kW': consommation/1000
+                    'consommation_W': consommation*1000,
+                    'consommation_kW': consommation
                 })
                 #print('* ', equipements_consommation[-1], '\n\n**')
             # Trier les équipements par consommation totale décroissante
@@ -1166,8 +1217,8 @@ class EquipementConsommationParPeriode(APIView):
                 'batimentId': equipement.zoneE.etageZ.batimentId.id,
                 'dateDebut': date_debut,
                 'dateFin': date_fin,
-                'consommation_W': consommation,
-                'consommation_kW': consommation/1000
+                'consommation_W': consommation*1000,
+                'consommation_kW': consommation
             }
             #print('**',  equipements_consommation)
             return Response(equipements_consommation, status=status.HTTP_200_OK)
@@ -1193,8 +1244,8 @@ class localConsommationParPeriode(APIView):
                     'batiment': zone.etageZ.batimentId.nomBatiment,
                     'dateDebut': date_debut,
                     'dateFin': date_fin,
-                    'consommation_W': consommation,
-                    'consommation_kW': consommation/1000
+                    'consommation_W': consommation*1000,
+                    'consommation_kW': consommation
                 })
                 #print('Zone_cons: ', zones_consommation, '\n')
 
@@ -1222,8 +1273,8 @@ class etagesConsommationParPeriode(APIView):
                     'nomEtage': etage.nomEtage,
                     'batimentId': etage.batimentId.id,
                     'nomBatiment': etage.batimentId.nomBatiment,
-                    'consommation_W': consommation,
-                    'consommation_kW': consommation / 1000
+                    'consommation_W': consommation*1000,
+                    'consommation_kW': consommation 
                 })
 
             #etages_consommation = sorted(etages_consommation, key=itemgetter('consommation_W'), reverse=True)
@@ -1244,8 +1295,8 @@ class batimentConsommationParPeriode(APIView):
                 batiments_consommation.append({
                     'id': batiment.id,
                     'nomBatiment': batiment.nomBatiment,
-                    'consommation_W': consommation,
-                    'consommation_kW': consommation/1000
+                    'consommation_W': consommation*1000,
+                    'consommation_kW': consommation
                 })
             #batiments_consommation = sorted(batiments_consommation, key=itemgetter('consommation_W'), reverse=True)
             return Response(batiments_consommation, status=status.HTTP_200_OK)
@@ -1440,7 +1491,8 @@ def get_id(request, username):
         profile = ProfileUser.objects.get(userId=user.id)
         if profile:
             # Retourner la propriété role du profil
-            return Response({'role': profile.role})
+            #j ai touché ici
+            return Response({'role': profile.role,'id':user.id})
         else:
             # Si le profil n'existe pas, retourner une erreur 404
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -1866,82 +1918,64 @@ nuit = [0, 1, 2, 3, 4, 5, 20, 21, 22, 23]
 def générerT1(date, prec):
   #Possibilité de réécrire la valeur précédente
   panne_probabilite = 0.05
-
     # Vérifier si une panne se produit
-  
   if round(random.uniform(0, 1), 0)==1 :
     return prec
-
   T='0'
   i=1 # il tente maximum 10 fois pour avoir une valeur proche à la précédente
   if int(date.strftime('%m')) in mois_chauds:
-
     if int(date.strftime('%H')) in matin :
       T =(round(random.uniform(18.0, 20.0), 1))
       while(i<10 and prec!=0 and (float(T)>prec+0.5 or float(T)<prec-0.5)):
         T =(round(random.uniform(18.0, 20.0), 1))
         i=i+1
-
     elif int(date.strftime('%H')) in midi :
       T =(round(random.uniform(17.0, 18.0), 1))
       while(i<10 and prec!=0 and float(T)>prec+0.5 and float(T)<prec+0.5):
         T =(round(random.uniform(17.0, 18.0), 1))
         i=i+1
-
     elif int(date.strftime('%H')) in soir :
       T =(round(random.uniform(18.0, 20.0), 1))
       while(i<10 and prec!=0 and float(T)>prec+0.5 and float(T)<prec+0.5):
         T =(round(random.uniform(18.0, 20.0), 1))
         i=i+1
-
     elif int(date.strftime('%H')) in nuit :
       T =(round(random.uniform(17.0, 18.0), 1))
       while(i<10 and prec!=0 and float(T)>prec+0.5 and float(T)<prec+0.5):
         T =(round(random.uniform(17.0, 20.0), 1))
         i=i+1
-
-
   elif int(date.strftime('%m')) in mois_froids:
-
     if int(date.strftime('%H')) in jour :
       T =(round(random.uniform(22.0, 24.0), 1))
       while(i<10 and prec!=0 and float(T)>prec+0.5 and float(T)<prec-0.5):
         T =(round(random.uniform(18.0, 20.0), 1))
         i=i+1
-
     elif int(date.strftime('%H')) in nuit :
       T =(round(random.uniform(24.0, 26.0), 1))
       while(i<10 and prec!=0 and float(T)>prec+0.5 and float(T)<prec+0.5):
         T =(round(random.uniform(17.0, 20.0), 1))
         i=i+1
-
-
   elif int(date.strftime('%m')) in mois_frais:
-
     if int(date.strftime('%H')) in matin :
       T =(round(random.uniform(20.0, 22.0), 1))
       while(i<10 and prec!=0 and float(T)>prec+0.5 and float(T)<prec-0.5):
         T =(round(random.uniform(18.0, 20.0), 1))
         i=i+1
-
     elif int(date.strftime('%H')) in midi :
       T =(round(random.uniform(19.0, 21.0), 1))
       while(i<10 and prec!=0 and float(T)>prec+0.5 and float(T)<prec+0.5):
         T =(round(random.uniform(17.0, 18.0), 1))
         i=i+1
-
     elif int(date.strftime('%H')) in soir :
       T =(round(random.uniform(20.0, 22.0), 1))
       while(i<10 and prec!=0 and float(T)>prec+0.5 and float(T)<prec+0.5):
         T =(round(random.uniform(18.0, 20.0), 1))
         i=i+1
-
     elif int(date.strftime('%H')) in nuit :
       T =(round(random.uniform(20.0, 22.0), 1))
       while(i<10 and prec!=0 and float(T)>prec+0.5 and float(T)<prec+0.5):
         T =(round(random.uniform(17.0, 20.0), 1))
         i=i+1
-
   return T
 def générerH1(date, prec):
   panne_probabilite = 0.05
@@ -4015,8 +4049,18 @@ class supprimer_periode(APIView):
             # Désactiver le bâtiment
                    
                     # Obtenir tous les équipements de la zone
-            PeriodeActivite.objects.filter(Equipement=equipement).delete()
+            
+            date = timezone.now()
+                    # Obtenir tous les équipements de la zone
+            PeriodeActivite.objects.filter(
+                            Equipement=equipement,
+                            tempsDebut__gte=date
+                        ).delete()
 
+            PeriodeActivite.objects.filter(
+                            Equipement=equipement,
+                            tempsFin__gte=date
+                        ).delete()
                       
             return Response('done', status=status.HTTP_200_OK)
 
@@ -4113,6 +4157,7 @@ def export_csv_view():
 #export_csv_view()
 
 ################################ entrainement #############################
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
@@ -4268,7 +4313,7 @@ def predict_consumption(request):
 def predict_consumption_equipement(year, month, day, hour, duration, puissance, type):
     try:
         # Obtenez les types d'équipement
-        print(year,month,day,hour,duration,puissance,type)
+        #print(year,month,day,hour,duration,puissance,type)
         type_chauffages = type == 'type_Chauffages'
         type_climatiseurs = type == 'type_Climatiseurs'
         type_deshumidificateurs = type == 'type_Déshumidificateurs'
@@ -4310,15 +4355,23 @@ def predict_consumption_mois(request):
         data = request.data
         year = data.get('year')
         month = data.get('month')
-        print('year',year,'month',month)
-        equipements = Equipement.objects.all()
-        consommation = 0
-        for equipement in equipements:
-            print(equipement.id)
+        #print('year',year,'month',month)
+        equipementsCri = Equipement.objects.filter(categorie='critique')
+        equipementsNor = Equipement.objects.filter(categorie='normal')
+        consommationCri = 0
+        consommationNor = 0
+        for equipement in equipementsCri:
+            #print(equipement.id)
             # Prédire la consommation pour chaque équipement
-            consommation += predict_consumption_equipement(year, month, 1,1, 720, equipement.puissance, equipement.type)
-            print('consommation',consommation)
-        return JsonResponse({'predicted_consumption': consommation})
+            consommationCri += predict_consumption_equipement(year, month, 1,1, 720, equipement.puissance, equipement.type)
+            #print('consommation',consommationCri)
+        for equipement in equipementsNor:
+            #print(equipement.id)
+            # Prédire la consommation pour chaque équipement
+            consommationNor += predict_consumption_equipement(year, month, 1,1, 720, equipement.puissance, equipement.type)
+            #print('consommation',consommationNor)
+    
+        return JsonResponse({'predicted_consumption': consommationCri, 'predicted_consumption2': consommationNor})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
@@ -4469,3 +4522,276 @@ for z in zones:
 Zones= Zone.objects.all()
 for z in Zones:
   generateJSONALL(z.id) """
+
+
+
+################################# ibtisemm genetique #########################
+# Genetic Algorithme
+
+""" POPULATION_SIZE = 100
+MUTATION_RATE = 0.05
+GENERATION = 200
+MINUTES = 44639 """
+
+POPULATION_SIZE = 100
+MUTATION_RATE = 0.03
+#GENERATION = 10
+MINUTES = 10
+""" POPULATION_SIZE = 10
+MUTATION_RATE = 0.09
+#GENERATION = 10
+MINUTES = 223 """
+
+equipements = Equipement.objects.all().order_by('zoneE')
+temperatures = {}
+humidites = {}
+presences = {}
+for equipement in equipements :
+  fichier = os.path.join('media', 'donnees' + str(equipement.zoneE.id) + '.json')
+  with open(fichier, 'r') as file:
+    """ data = json.load(file)
+    temperatures[equipement.zoneE.id] = [entry['temperature'] for entry in data.values()]
+    humidites[equipement.zoneE.id] = [entry['humidite'] for entry in data.values()]
+    presences[equipement.zoneE.id] = [entry['presence'] for entry in data.values()] """
+    data = json.load(file)
+    limited_data = list(data.values())[:MINUTES]  # Limiter à 5000 premières entrées
+    temperatures[equipement.zoneE.id] = [entry['temperature'] for entry in limited_data]
+    humidites[equipement.zoneE.id] = [entry['humidite'] for entry in limited_data]
+    presences[equipement.zoneE.id] = [entry['presence'] for entry in limited_data]
+
+""" for key, value in temperatures.items():
+   print('key ', key) """
+
+climatiseurs = Equipement.objects.filter(type='Climatiseurs').order_by('zoneE')
+chauffages = Equipement.objects.filter(type='Chauffages').order_by('zoneE')
+deshumidificateurs = Equipement.objects.filter(type='Deshumidificateurs').order_by('zoneE')
+equipments_always_on = Equipement.objects.filter(
+    Q(type__icontains='rateurs et Cong') | Q(type='Climatiseurs', zoneE_id=43)
+)
+
+selected_equipment_ids = list(climatiseurs.values_list('id', flat=True)) + \
+                         list(chauffages.values_list('id', flat=True)) + \
+                         list(deshumidificateurs.values_list('id', flat=True)) + \
+                         list(equipments_always_on.values_list('id', flat=True))
+
+equipements_presence = Equipement.objects.exclude(id__in=selected_equipment_ids).order_by('zoneE')
+
+
+
+# ********************************* Ajouter le reste des equipements *********************************
+import numpy as np
+# algo naif:
+MINUTES = 22320
+
+print()
+equipements = Equipement.objects.all().order_by('zoneE')
+
+climatiseurs = Equipement.objects.filter(type='Climatiseurs').order_by('zoneE')
+chauffages = Equipement.objects.filter(type='Chauffages').order_by('zoneE')
+deshumidificateurs = Equipement.objects.filter(type='Deshumidificateurs').order_by('zoneE')
+eclairage = Equipement.objects.filter(type='Eclairage').order_by('zoneE')
+confort = Equipement.objects.filter(type='Équipements de Confort et de Divertissement').order_by('zoneE')
+equipments_always_on = Equipement.objects.filter(
+    Q(type__icontains='rateurs et Cong') | Q(type='Climatiseurs', zoneE_id=43)
+)
+
+selected_equipment_ids = list(climatiseurs.values_list('id', flat=True)) + \
+                         list(chauffages.values_list('id', flat=True)) + \
+                         list(deshumidificateurs.values_list('id', flat=True)) + \
+                         list(equipments_always_on.values_list('id', flat=True)) + \
+                         list(eclairage.values_list('id', flat=True)) + \
+                         list(confort.values_list('id', flat=True))
+
+autres = Equipement.objects.exclude(id__in=selected_equipment_ids).order_by('zoneE')
+
+
+
+# ********************************* Ajouter le reste des equipements *********************************
+""" 
+
+
+def always_on(MINUTES) :
+  print('aa')
+  return [1] * MINUTES
+
+def always_off(MINUTES) :
+  print('aa')
+  return [0] * MINUTES
+
+def deshum_states(MINUTES) :
+  print('aa')
+  return [1] * MINUTES
+
+def journee_on(MINUTES):
+  print('aa')
+  states = []
+  h=0
+  for j in range(8*60):
+    if(len(states)<MINUTES):
+      states.append(0)
+    else:
+      break
+
+  while j<MINUTES:
+    for k in range(j, (j+14)*60):
+      if(len(states)<MINUTES):
+        states.append(1)
+      else:
+        break
+    for j in range(k, (k+10)*60):
+      if(len(states)<MINUTES):
+        states.append(0)
+      else:
+        break
+  return states
+
+def random_states(MINUTES) :
+  print('aa')
+
+  minutes_per_day = 1440
+
+  # Initialiser le tableau à zéro
+  etat = np.zeros(MINUTES, dtype=int)
+
+  # Remplissage du tableau
+  for i in range(0, MINUTES, minutes_per_day):
+    # Extinction de 22h à 8h (10h d'extinction)
+    etat[i + 1320 : i + 1440] = 0  # 22:00 - 24:00
+    etat[i : i + 480] = 0          # 00:00 - 08:00
+
+    # Allumer ou éteindre de 08:00 à 22:00 avec au moins 20 minutes par état
+    day_start = i + 480  # 08:00
+    day_end = i + 1320   # 22:00
+    pos = day_start
+
+    while pos < day_end:
+      # Calculer la durée maximale possible pour le bloc actuel
+      max_duration = min(60, day_end - pos)
+
+      if max_duration < 20:
+          # Si moins de 20 minutes restent, étendre jusqu'à la fin de la période
+          state_duration = max_duration
+      else:
+          # Sinon, générer une durée entre 20 et la durée maximale possible
+          state_duration = np.random.randint(20, max_duration + 1)
+
+      # Choisir aléatoirement l'état (0 ou 1)
+      state = np.random.choice([0, 1])
+
+      # Appliquer l'état à la durée choisie
+      etat[pos : pos + state_duration] = state
+
+      # Avancer le pointeur de la position actuelle
+      pos += state_duration
+
+  # Convertir en liste
+  return etat.tolist()
+
+print('init ...')
+equipements_etats = {
+  "climatiseurs": {C.id: always_on(MINUTES) for C in climatiseurs},
+  "chauffages": {C.id: always_off(MINUTES) for C in chauffages},
+  "deshumidificateurs": {C.id: always_on(MINUTES) for C in deshumidificateurs},
+  "equipments_always_on": {C.id: always_on(MINUTES) for C in deshumidificateurs},
+  "eclairage": {C.id: journee_on(MINUTES) for C in eclairage},
+  "confort": {C.id: journee_on(MINUTES) for C in confort},
+  "autres": {C.id: random_states(MINUTES) for C in autres}
+}
+print('fin init ', equipements_etats)
+
+def consom_climatiseurs(equipements_etats):
+  print('bb')
+  data = equipements_etats["climatiseurs"]
+  consommation_totale = 0
+  for i, (key, value) in enumerate(data.items()):
+    states = value
+    equipement = Equipement.objects.get(id=key)
+
+    consommation_totale += states.count(1) * equipement.puissance / 60000
+
+  return consommation_totale
+
+def consom_chauffage(equipements_etats):
+  print('bb')
+  data = equipements_etats["chauffages"]
+  consommation_totale = 0
+  for i, (key, value) in enumerate(data.items()):
+    states = value
+    equipement = Equipement.objects.get(id=key, type='Chauffages')
+
+    consommation_totale += states.count(1) * equipement.puissance / 60000
+
+  return consommation_totale
+
+def consom_deshumidificateur(equipements_etats):
+  print('bb')
+  data = equipements_etats["deshumidificateurs"]
+  consommation_totale = 0
+  for i, (key, value) in enumerate(data.items()):
+    states = value
+    equipement = Equipement.objects.get(id=key)
+    consommation_totale += states.count(1) * equipement.puissance / 60000
+
+  return consommation_totale
+
+def consom_equipments_always_on(equipements_etats):
+  print('bb')
+  data = equipements_etats["equipments_always_on"]
+  consommation_totale = 0
+  for i, (key, value) in enumerate(data.items()):
+    states = value
+    equipement = Equipement.objects.get(id=key)
+
+    consommation_totale += states.count(1) / 60 * equipement.puissance
+
+  return consommation_totale
+
+def consom_eclairage(equipements_etats):
+  print('bb')
+  data = equipements_etats["eclairage"]
+  consommation_totale = 0
+  for i, (key, value) in enumerate(data.items()):
+    states = value
+    if i==0:
+      print('count: ', states[:1000])
+    equipement = Equipement.objects.get(id=key)
+    consommation_totale += states.count(1) / 60 * equipement.puissance
+
+  return consommation_totale
+
+def consom_confort(equipements_etats):
+  print('bb')
+  data = equipements_etats["confort"]
+  consommation_totale = 0
+  for i, (key, value) in enumerate(data.items()):
+    states = value
+    equipement = Equipement.objects.get(id=key)
+    consommation_totale += states.count(1) / 60 * equipement.puissance
+
+  return consommation_totale
+
+n = consom_climatiseurs(equipements_etats) + consom_chauffage(equipements_etats) + consom_deshumidificateur(equipements_etats) + consom_equipments_always_on(equipements_etats) + consom_eclairage(equipements_etats) + consom_confort(equipements_etats)
+print('n = ', n)
+ """
+
+
+def HopitalConsommationPendantMoisTa3i(date_debut,date_fin):
+    
+        try:
+            
+
+            equipements = Equipement.objects.all()
+            consommation = 0
+
+            for equipement in equipements:
+                consommation += equipement.calculerConsommationParPeriode(date_debut, date_fin)
+
+            return consommation
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+""" print("juin",HopitalConsommationPendantMoisTa3i("2024-06-01 01:00:00","2024-06-30 23:59:00"))
+print("mai",HopitalConsommationPendantMoisTa3i("2024-05-01 01:00:00","2024-05-31 23:59:00"))
+print("avril",HopitalConsommationPendantMoisTa3i("2024-04-01 01:00:00","2024-04-30 23:59:00"))
+print("mars",HopitalConsommationPendantMoisTa3i("2024-03-01 01:00:00","2024-03-31 23:59:00"))
+print("fevrier",HopitalConsommationPendantMoisTa3i("2024-02-01 01:00:00","2024-02-29 23:59:00"))
+print("janvier",HopitalConsommationPendantMoisTa3i("2024-01-01 01:00:00","2024-01-31 23:59:00"))  """

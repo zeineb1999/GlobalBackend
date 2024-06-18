@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'rest_framework',
     'channels',
+    'django_admin_logs',
     #'daphne',
     'django_extensions',
     'quickstart.apps.QuickstartConfig',
@@ -58,7 +59,8 @@ INSTALLED_APPS = [
   
    
 ]
-
+DJANGO_ADMIN_LOGS_DELETABLE=True
+DJANGO_ADMIN_LOGS_ENABLED=True
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

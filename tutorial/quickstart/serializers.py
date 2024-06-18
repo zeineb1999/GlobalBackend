@@ -61,7 +61,11 @@ class BatimentSerializer(serializers.ModelSerializer):
 class EquipementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Equipement
-        fields = ('id','nom', 'etat', 'categorie','type','puissance','zoneE')
+        fields = ('id','nom', 'etat', 'categorie','type','puissance','zoneE','archive','minC','maxC')
+class EquipementAjouterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EquipementAjouter
+        fields = ('id','nom', 'etat', 'categorie','type','puissance','zoneE','rapport')
 
 class ProfileUserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -118,7 +122,7 @@ class AlerteSerializer(serializers.ModelSerializer):
 class RapportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rapport
-        fields = ['id','alerte','redacteur','causes', 'solutions', 'risques', 'equipementsDemandes', 'equipementsNecessites', 'equipement', 'dateRapport', 'vu', 'notifie','decision']
+        fields = ['id','alerte','redacteur','causes', 'solutions', 'risques', 'equipementsDemandes', 'equipementsNecessites', 'equipement', 'dateRapport', 'vu', 'notifie','decision','approuve','cout']
 
 class SauvegardeSerializer(serializers.ModelSerializer):
     class Meta:

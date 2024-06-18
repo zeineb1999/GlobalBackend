@@ -110,6 +110,9 @@ CHANNEL_LAYERS = {
         },
     },
 }
+DAPHNE_WEBSOCKET_CONNECT_TIMEOUT = 3600  # Timeout de connexion WebSocket de 3600 secondes (1 heure)
+DAPHNE_WEBSOCKET_TIMEOUT = 3600  # Timeout de message WebSocket de 3600 secondes (1 heure)
+
 """
 CHANNEL_LAYERS = {
     'default': {

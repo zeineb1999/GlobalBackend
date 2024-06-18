@@ -3,6 +3,7 @@ from .models import *
 
 admin.site.register(Zone)
 admin.site.register(Equipement)
+admin.site.register(EquipementAjouter)
 admin.site.register(Etage)
 admin.site.register(ExcelData)
 admin.site.register(Batiment)

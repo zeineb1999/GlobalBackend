@@ -12,6 +12,7 @@ class ProfileUser(models.Model):
 
 class Batiment(models.Model):
     nomBatiment = models.CharField(max_length=500)
+    surface = models.FloatField(null=True, blank=True)
     typeBatiment = models.CharField(max_length=500,null=True, blank=True)
     active = models.BooleanField(default=True)
     def str(self):
@@ -36,6 +37,7 @@ class Batiment(models.Model):
 
 class Etage(models.Model):
     surface= models.FloatField(null=True, blank=True)
+    surface = models.FloatField(null=True, blank=True)
     nomEtage= models.CharField(max_length=500, null=True, blank=True)
     batimentId = models.ForeignKey(Batiment,on_delete=models.CASCADE)
     active = models.BooleanField(default=True)
@@ -61,6 +63,7 @@ class Etage(models.Model):
 class Zone(models.Model):
     nomLocal = models.CharField(max_length=500)
     typeLocal = models.CharField(max_length=500, null=True, blank=True)
+    surface = models.FloatField(null=True, blank=True)
     etageZ = models.ForeignKey(Etage, on_delete=models.CASCADE)
     surface = models.FloatField(null=True, blank=True)
     minT = models.FloatField(null=True, blank=True)
@@ -92,7 +95,10 @@ class Equipement(models.Model):
     # Définition des choix pour les états et les catégories
     ETAT_CHOICES = (("ON", "ON"), ("OFF", "OFF"))
     CATEGORIE_CHOICES = (("critique", "critique"), ("normal", "normal"))
-
+    archive= models.CharField(max_length=100, null=True, blank=True)
+    minC = models.FloatField(null=True, blank=True)
+    maxC = models.FloatField(null=True, blank=True)
+    
     # Définition des champs du modèle
     nom = models.CharField(max_length=500)
     etat = models.CharField(max_length=100, choices=ETAT_CHOICES, default='ON')  # Définition de la valeur par défaut pour l'état
@@ -100,7 +106,8 @@ class Equipement(models.Model):
     categorie = models.CharField(max_length=500, null=True, blank=True)
     puissance = models.FloatField(null=True, blank=True)
     zoneE = models.ForeignKey(Zone, on_delete=models.CASCADE)
-
+    
+    date= models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return self.nom
 
@@ -152,14 +159,28 @@ class Equipement(models.Model):
                         debut = date_debut.timestamp()
                     if fin > date_fin.timestamp():
                         fin = date_fin.timestamp()
-                    C = self.puissance *(fin - debut) / 3600
+                    C = self.puissance *(fin - debut) / 3600 /1000
                     """ if(periode.Equipement.id==11): 
                       print(consommation_totale, ' + ', C, ' = ', consommation_totale + C, " temps: ", (fin - debut) / 3600) """
                     consommation_totale = consommation_totale + C
 
         return consommation_totale
 
+class EquipementAjouter(models.Model):
+    # Définition des choix pour les états et les catégories
+    ETAT_CHOICES = (("ON", "ON"), ("OFF", "OFF"))
+    CATEGORIE_CHOICES = (("critique", "critique"), ("normal", "normal"))
 
+    # Définition des champs du modèle
+    nom = models.CharField(max_length=500)
+    etat = models.CharField(max_length=100, choices=ETAT_CHOICES, default='ON')  # Définition de la valeur par défaut pour l'état
+    type = models.CharField(max_length=100, null=True, blank=True)  # Définition de la valeur par défaut pour la catégorie
+    categorie = models.CharField(max_length=500, null=True, blank=True)
+    puissance = models.FloatField(null=True, blank=True)
+    zoneE = models.ForeignKey(Zone, on_delete=models.CASCADE)
+
+    date= models.DateTimeField(auto_now_add=True)
+    rapport= models.FloatField(null=True, blank=True)
 
 class PeriodeActivite(models.Model):
   tempsDebut = models.DateTimeField()
@@ -209,7 +230,8 @@ class Rapport(models.Model):
   vu = models.BooleanField(default=False)
   notifie = models.BooleanField(default=False)
   decision =models.CharField(max_length=2000, null=True, blank=True)
-
+  approuve= models.CharField(max_length=2000, null=True, blank=True)
+  cout = models.FloatField(null=True, blank=True)
 
 
 
@@ -297,5 +319,5 @@ class PeriodeActiviteLastYear(models.Model):
       #fin = self.tempsFin.timestamp()
 
       heures_activite = (fin - debut) / 3600
-      self.consommation = self.Equipement.puissance * heures_activite
+      self.consommation = (self.Equipement.puissance * heures_activite)/1000
       self.save()
