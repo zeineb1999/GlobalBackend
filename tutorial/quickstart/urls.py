@@ -46,7 +46,8 @@ urlpatterns = [
     path('hopital_consommation_pendant_mois_critique', HopitalConsommationPendantMoisCritique.as_view(), name='hopital_consommation_critique'),
     path('hopital_consommation_pendant_mois_normal', HopitalConsommationPendantMoisNonCritique.as_view(), name='hopital_consommation_critique_normal'),
     path('hopital_consommation_pendant_mois_all', HopitalConsommationPendantMoisAll.as_view(), name='hopital_consommation_all'),
-   
+    path('hopital_consommation_total',HopitalConsommationAll.as_view(), name='hopital_consommation_all'),
+    
     path('equipement-consommation-p/<int:equipement_id>/', EquipementConsommationParPeriode.as_view(), name='equipement_consommation'),
     path('', include(router.urls)),
     path('getRole/<int:user_Id>/', views.get_role, name='get_role'),
@@ -92,7 +93,9 @@ urlpatterns = [
     path('get_alerte_non_notifie/', GetAlerteNonNotifie.as_view(), name='get_alerte_non_notifie'),
     path('getTenAlertes', views.getTenAlertes, name='getTenAlertes'),
    
-    path('rapportByEquipement/<int:equipementId>/', views.getRapportByEquipement, name='getAlertes'),
+    path('rapportByEquipement/<int:equipementId>', views.getRapportByEquipement, name='getAlertes'),
+    path('alertesByEquipement/<int:equipementId>/', views.getAlertesByEquipement, name='getAlertes'),
+  
     path('equipementRemplacement/<int:rapportId>/', views.getEquipementRemplacement, name='getAlertes'),
     path('stop-method/', stop_method_view, name='stop-method'),
     path('start-method/', start_method_view, name='start-method'),
@@ -100,6 +103,10 @@ urlpatterns = [
     path('initialData/', initialData.as_view(), name='initialData'),
     path('decision/', equipementdecision.as_view(), name='equipementdecision'),
     path('archive/', equipementarchiver.as_view(), name='equipementdecision'),
+    path('modifierParam1/', modifierparam1.as_view(), name='equipementdecision'),
+    path('modifierParam2/', modifierparam2.as_view(), name='equipementdecision'),
+    path('modifierParam3/', modifierparam3.as_view(), name='equipementdecision'),
+    path('modifierParam4/', modifierparam4.as_view(), name='equipementdecision'),
   
     path('cout/', equipementcout.as_view(), name='equipementcout'),
    
@@ -116,7 +123,9 @@ urlpatterns = [
     path('deletePeriode/',supprimer_periode.as_view(),name='supprimer_periode'),
     path('dateDesactivation/<int:zoneId>/',views.dateDesactivation,name='dateDesactivation'),
     path('predict/', predict_consumption, name='predict_consumption'),
-    path('prediction_mois/',predict_consumption_mois,name='predict_mois')
+    path('prediction_mois/',predict_consumption_mois,name='predict_mois'),
+    path('prediction_mois_local/',predict_consumption_mois_local,name='predict_mois'),
+    path('prediction_mois_equipement/',predict_consumption_mois_equipement,name='predict_mois'),
    ]
 
 urlpatterns += router.urls

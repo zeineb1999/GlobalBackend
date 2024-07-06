@@ -137,7 +137,7 @@ DATABASES = {
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),  # Durée de vie du token d'accès
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),  # Durée de vie du token d'accès
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # Durée de vie du token de rafraîchissement
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -178,13 +178,13 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'Africa/Algiers'  # Utilisez le fuseau horaire correspondant à l'Algérie
+#TIME_ZONE = 'Africa/Algiers'  # Utilisez le fuseau horaire correspondant à l'Algérie
 
-#USE_TZ = False
+USE_TZ = False
 
 USE_I18N = True
 
-USE_TZ = True
+#USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)

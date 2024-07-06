@@ -198,7 +198,7 @@ class PeriodeActivite(models.Model):
       #fin = self.tempsFin.timestamp()
 
       heures_activite = (fin - debut) / 3600
-      self.consommation = self.Equipement.puissance * heures_activite
+      self.consommation = self.Equipement.puissance * heures_activite /1000
       self.save()
 
 class ExcelData(models.Model):

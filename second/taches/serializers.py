@@ -60,7 +60,7 @@ class BatimentSerializer(serializers.ModelSerializer):
 class EquipementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Equipement
-        fields = ('id','nom', 'etat', 'categorie','type','puissance','zoneE')
+        fields = ('id','nom', 'etat', 'categorie','type','puissance','zoneE','minC','maxC')
 
 class ProfileUserSerializer(serializers.ModelSerializer):
     class Meta:

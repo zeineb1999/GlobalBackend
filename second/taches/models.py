@@ -101,7 +101,9 @@ class Equipement(models.Model):
     type = models.CharField(max_length=100)  # Définition de la valeur par défaut pour la catégorie
     categorie = models.CharField(max_length=500, null=True, blank=True)
     puissance = models.FloatField(null=True, blank=True)
-   
+    minC = models.FloatField(null=True, blank=True)
+    maxC = models.FloatField(null=True, blank=True)
+    
     zoneE = models.ForeignKey(Zone, on_delete=models.CASCADE)
 
     def __str__(self):

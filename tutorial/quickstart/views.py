@@ -59,9 +59,9 @@ class HopitalConsommationPendantMoisCritique(APIView):
             consommation = 0
 
             for equipement in equipements:
-                print('equipement : ',equipement)
+                #print('equipement : ',equipement)
                 consommation += equipement.calculerConsommationParPeriode(date_debut, date_fin)
-            print('consommation : ',consommation)
+            #print('consommation : ',consommation)
             return Response(consommation, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -75,52 +75,146 @@ class HopitalConsommationPendantMoisNonCritique(APIView):
             consommation = 0
 
             for equipement in equipements:
-                print('equipement : ',equipement)
+                #print('equipement : ',equipement)
                 consommation += equipement.calculerConsommationParPeriode(date_debut, date_fin)
-            print('consommation : ',consommation)
+            #print('consommation : ',consommation)
             return Response(consommation, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Reset password:
 class HopitalConsommationPendantMoisAll(APIView):
     def get(self, request):
-        
+
             date_debut = '2024-06-01 00:00:00'
             date_fin = datetime.now().strftime('%Y-%m-%d %H:%M:00')
-            print(date_debut, date_fin)
+            #print(date_debut, date_fin)
             equipements = Equipement.objects.filter(categorie='critique')
             critique = sum(equipement.calculerConsommationParPeriode(date_debut, date_fin) for equipement in equipements)
 
-           
-           
+
+
             equipements = Equipement.objects.filter(categorie='normal')
             normal = sum(equipement.calculerConsommationParPeriode(date_debut, date_fin) for equipement in equipements)
-         
 
 
-                       
+
+
             data = {
                 'critique': critique,
                 'normal': normal
             }
-            
+
             return Response(data, status=status.HTTP_200_OK)
+
+from datetime import datetime
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Equipement
+
+class HopitalConsommationAll(APIView):
+    def get(self, request):
+        mois = request.GET.get('mois')
+        date_debut = None
+        date_fin = None
+
+        if int(mois) == 1:
+            date_debut = '2024-01-01 00:00:00'
+            date_fin = '2024-01-31 23:59:00'
+        elif int(mois) == 2:
+            date_debut = '2024-02-01 00:00:00'
+            date_fin = '2024-02-29 23:59:00'
+        elif int(mois) == 3:
+            date_debut = '2024-03-01 00:00:00'
+            date_fin = '2024-03-31 23:59:00'
+        elif int(mois) == 4:
+            date_debut = '2024-04-01 00:00:00'
+            date_fin = '2024-04-30 23:59:00'
+        elif int(mois) == 5:
+            date_debut = '2024-05-01 00:00:00'
+            date_fin = '2024-05-31 23:59:00'
+        elif int(mois) == 6:
+            date_debut = '2024-06-01 00:00:00'
+            date_fin = datetime.now().strftime('%Y-%m-%d %H:%M:00')
+        else:
+            return Response({'error': 'Invalid month'}, status=status.HTTP_400_BAD_REQUEST)
+
+        equipements_critique = Equipement.objects.filter(categorie='critique')
+        critique = sum(equipement.calculerConsommationParPeriode(date_debut, date_fin) for equipement in equipements_critique)
+
+        equipements_normal = Equipement.objects.filter(categorie='normal')
+        normal = sum(equipement.calculerConsommationParPeriode(date_debut, date_fin) for equipement in equipements_normal)
+
+        data = {
+            'critique': critique,
+            'noncritique': normal
+        }
+        #print( "dataaaaaaaaaaa",data)
+
+        return Response(data, status=status.HTTP_200_OK)
+
 class equipementcout(APIView):
 
     def post(self, request, *args, **kwargs):
         data = request.data  # Utilisez request.data pour récupérer les données du corps de la requête
         id = data.get('id')
-        print("id ,"+str(id))
+        #print("id ,"+str(id))
 
-        #print("email ,"+email)
+        ##print("email ,"+email)
 
         cout = data.get('cout')
-      
+
         Rapport.objects.filter(id=id).update(cout=cout)
         return JsonResponse({'message': 'Le statut de l`equipement a été mis à jour'})
-    
-class equipementarchiver(APIView):
 
+
+class modifierparam4(APIView):
+    def post(self, request, *args, **kwargs):
+        data = request.data  # Utilisez request.data pour récupérer les données du corps de la requête
+        id = data.get('zoneId')
+        val = data.get('val4')
+        #print("4---------------------------------id",id,"val",val)
+        z=Zone.objects.get(id=id)
+        z.minH=val
+        z.save()
+        return JsonResponse({'message': 'Le statut de l`equipement a été mis à jour'})
+class modifierparam1(APIView):
+
+     def post(self, request, *args, **kwargs):
+        data = request.data  # Utilisez request.data pour récupérer les données du corps de la requête
+        id = data.get('zoneId')
+        val = data.get('val1')
+        #print("1---------------------------------id",id,"val",val)
+        z=Zone.objects.get(id=id)
+        z.minT=val
+        z.save()
+        return JsonResponse({'message': 'Le statut de l`equipement a été mis à jour'})
+class modifierparam2(APIView):
+
+    def post(self, request, *args, **kwargs):
+        data = request.data  # Utilisez request.data pour récupérer les données du corps de la requête
+        id = data.get('zoneId')
+        val = data.get('val2')
+        #print("2--------------------------------id",id,"val",val)
+        z=Zone.objects.get(id=id)
+        z.maxT=val
+        z.save()
+        return JsonResponse({'message': 'Le statut de l`equipement a été mis à jour'})
+
+class modifierparam3(APIView):
+
+    def post(self, request, *args, **kwargs):
+        data = request.data  # Utilisez request.data pour récupérer les données du corps de la requête
+        id = data.get('zoneId')
+        val = data.get('val3')
+        #print("3--------------------------------id",id,"val",val)
+        z=Zone.objects.get(id=id)
+        z.maxH=val
+        z.save()
+        return JsonResponse({'message': 'Le statut de l`equipement a été mis à jour'})
+
+
+class equipementarchiver(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data  # Utilisez request.data pour récupérer les données du corps de la requête
         id = data.get('id')
@@ -131,12 +225,12 @@ class equipementdecision(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data  # Utilisez request.data pour récupérer les données du corps de la requête
         id = data.get('id')
-        print("id ,"+str(id))
+        #print("id ,"+str(id))
 
-        #print("email ,"+email)
+        ##print("email ,"+email)
 
         decision = data.get('decision')
-        print("decision ,"+str(decision))
+        #print("decision ,"+str(decision))
         Rapport.objects.filter(id=id).update(decision=decision)
         return JsonResponse({'message': 'Le statut de l`equipement a été mis à jour'})
 class equipementapprovation(APIView):
@@ -144,12 +238,12 @@ class equipementapprovation(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data  # Utilisez request.data pour récupérer les données du corps de la requête
         id = data.get('id')
-        print("id ,"+str(id))
+        #print("id ,"+str(id))
 
-        #print("email ,"+email)
+        ##print("email ,"+email)
 
         approuve = data.get('approuve')
-        
+
         Rapport.objects.filter(id=id).update(approuve=approuve)
         return JsonResponse({'message': 'Le statut de l`equipement a été mis à jour'})
 class ProfileView(APIView):
@@ -165,14 +259,14 @@ class ProfileView(APIView):
            'password': user.password.encode('utf-8'),
             'email': user.email,
         }
-        #print("profile_data : ", profile_data)
+        ##print("profile_data : ", profile_data)
         return Response(profile_data)
     def put(self, request):
 
         user = request.user
-        """print("username : ", request.data.get('username'))
-        print("firstname : ", request.data.get('firstname'))
-        print("lastname : ", request.data.get('lastname')) """
+        """#print("username : ", request.data.get('username'))
+        #print("firstname : ", request.data.get('firstname'))
+        #print("lastname : ", request.data.get('lastname')) """
 
         new_username = request.data.get('username')
         new_firstname = request.data.get('firstname')
@@ -187,7 +281,7 @@ class ProfileView(APIView):
         user.email =new_email
         user.save()
         return Response({'message': 'Profil mis à jour avec succès'})
-    
+
 
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
@@ -307,9 +401,9 @@ import json
     )
   # broadcast Notification; Individual + community
   def broadcast_notification_message(self, event):
-    print('event  envoi', event)
+    #print('event  envoi', event)
     message = event['message']
-    self.send(text_data=json.dumps({ 
+    self.send(text_data=json.dumps({
     'message': message
     }))
 
@@ -325,7 +419,7 @@ def notification_post_save(sender, instance, created, **kwargs):
       'message': serailize.data
       }
     )
-    print('group_name', group_name)
+    #print('group_name', group_name)
  """
 from channels.generic.websocket import StopConsumer
 class AlertConsumer(WebsocketConsumer):
@@ -346,14 +440,14 @@ class AlertConsumer(WebsocketConsumer):
     )
     raise StopConsumer()
   def send_data(self):
-        #print('send_data')
+        ##print('send_data')
     if self.is_running:
-            #print('send_data running')
+            ##print('send_data running')
       self.check_conditions_and_create_alerts()
 
       Timer(120, self.send_data).start()
   def check_conditions_and_create_alerts(self):
-        print('check_conditions_and_create_alerts chaque minute')
+        #print('check_conditions_and_create_alerts chaque minute')
         locaux = Zone.objects.all()
         date_recherchee = datetime.now().strftime('%Y-%m-%d %H:%M:00')
         for local in locaux:
@@ -366,10 +460,10 @@ class AlertConsumer(WebsocketConsumer):
                     temperature = contenu_json[date_recherchee]["temperature"]
                     humidite = contenu_json[date_recherchee]["humidite"]
                     if temperature < local.minT or temperature > local.maxT :
-                        print('cas temperature : ', temperature, 'local : ', local)
+                        #print('cas temperature : ', temperature, 'local : ', local)
                         self.create_alert(local, temperature, "temperature")
                     if humidite < local.minH or humidite > local.maxH:
-                        print('cas humidite : ', humidite, 'local : ', local)
+                        #print('cas humidite : ', humidite, 'local : ', local)
                         self.create_alert(local,humidite, "humidite" )
 
   def create_alert(self, local, temperature, type):
@@ -379,7 +473,7 @@ class AlertConsumer(WebsocketConsumer):
 
               localId=local,
               valeur=temperature,
-             
+
               text=f"Alert! Temperature: {temperature}  out of range."
           )
         elif type == "humidite":
@@ -388,15 +482,15 @@ class AlertConsumer(WebsocketConsumer):
 
               localId=local,
               valeur=temperature,
-             
+
               text=f"Alert! humidité: {temperature}  out of range."
           )
-        alert.save() 
+        alert.save()
   # broadcast Notification; Individual + community
   def broadcast_notification_message(self, event):
-    print('event  envoi', event)
+    #print('event  envoi', event)
     message = event['message']
-    self.send(text_data=json.dumps({ 
+    self.send(text_data=json.dumps({
     'message': message
     }))
 
@@ -412,7 +506,7 @@ def notification_post_save(sender, instance, created, **kwargs):
       'message': serailize.data
       }
     )
-    print('group_name', group_name)
+    #print('group_name', group_name)
 #------------------------------------------------------- alerte to maintenance ---------------------------
 """ class UserIDChangeConsumer(WebsocketConsumer):
   def connect(self):
@@ -428,9 +522,9 @@ def notification_post_save(sender, instance, created, **kwargs):
     self.channel_name
     )
   def user_id_change_message(self, event):
-    print('event  envoi', event)
+    #print('event  envoi', event)
     message = event['message']
-    self.send(text_data=json.dumps({ 
+    self.send(text_data=json.dumps({
     'message': message
     }))
 from django.db.models.signals import pre_save
@@ -454,7 +548,7 @@ def notify_user_id_change(sender, instance, **kwargs):
                     'message': serialize.data
                 }
             )
-            print('userID modified, notification sent') """
+            #print('userID modified, notification sent') """
 #------------------------------------------------------- FIN alerte to maintenance ---------------------------
   # broadcast Notification; Individual + community
 #************************************** fin web socket *****************************
@@ -489,13 +583,13 @@ class LocalConsumer(WebsocketConsumer):
         )
 
     def send_data(self):
-        #print('send_data')
+        ##print('send_data')
         if self.is_running:
-            #print('send_data running')
+            ##print('send_data running')
             self.check_conditions_and_create_alerts()
             '''
             data = self.get_TH_par_instant()  # Remplacez par votre fonction pour obtenir les données`
-            print('data ----------> : ', data)
+            #print('data ----------> : ', data)
             self.send(text_data=json.dumps(data)) `
             '''
             Timer(60, self.send_data).start()
@@ -523,7 +617,7 @@ class LocalConsumer(WebsocketConsumer):
 
               localId=local.id,
               valeur=temperature,
-             
+
               text=f"Alert! Temperature: {temperature}  out of range."
           )
         elif type == "humidite":
@@ -532,39 +626,39 @@ class LocalConsumer(WebsocketConsumer):
 
               localId=local.id,
               valeur=temperature,
-             
+
               message=f"Alert! humidité: {temperature}  out of range."
           )
-        alert.save() 
+        alert.save()
     def get_TH_par_instant(self):
-        #print('get_TH_par_instant')
+        ##print('get_TH_par_instant')
         # Exemple de récupération de plusieurs locaux
         locaux = Zone.objects.all()
-        #print('locaux : ', locaux)
+        ##print('locaux : ', locaux)
         date_recherchee = datetime.now().strftime('%Y-%m-%d %H:%M:00')
-        #print('date_recherchee : ', date_recherchee)
+        ##print('date_recherchee : ', date_recherchee)
         results = []
 
         for local in locaux:
             nom_fichier_json = f"{local.id}"  # Assurez-vous que le nom du fichier correspond à l'ID du local
             chemin_fichier = os.path.join('media', 'donnees' + str(nom_fichier_json) + '.json')
-            #print('chemin_fichier : ', chemin_fichier)
+            ##print('chemin_fichier : ', chemin_fichier)
             if os.path.exists(chemin_fichier):
                 with open(chemin_fichier, 'r') as fichier:
                     contenu_json = json.load(fichier)
-                    
-                    
+
+
                 if date_recherchee in contenu_json:
-                    #print('contenu_json : ', contenu_json)
+                    ##print('contenu_json : ', contenu_json)
                     temperature = contenu_json[date_recherchee]["temperature"]
                     humidite = contenu_json[date_recherchee]["humidite"]
-                    
+
                     # Utiliser l'identifiant de la zone plutôt que l'objet lui-même
                     results.append({"id": local.id, "T": temperature, "H": humidite})
-                    #print('result : ', results)
+                    ##print('result : ', results)
 
         return results
- 
+
 #***********************************  fin web socket 1min *************************************
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -592,7 +686,7 @@ class AlerteViewSet(viewsets.ModelViewSet):
     queryset = Alerte.objects.all()
     serializer_class = AlerteSerializer
 
-    
+
 class EtageViewSet(viewsets.ModelViewSet):
     queryset = Etage.objects.all()
     serializer_class = EtageSerializer
@@ -738,7 +832,7 @@ def genetic_algorithm(population_size, num_generations, num_parents, equipements
         offspring = [mutation(child) for child in offspring]
         population = replace(population, offspring)
         best_solution = min(population, key=lambda sol: evaluate_solution(sol))
-        print(f"Generation {generation}: Best solution consumption = {evaluate_solution(best_solution)}")
+        #print(f"Generation {generation}: Best solution consumption = {evaluate_solution(best_solution)}")
     return best_solution
 
 # Fonction principale pour lancer l'algorithme
@@ -750,7 +844,7 @@ def optimize_consumption():
     #l'algorithme fonctionnera sur 50 générations.
     # 20 individus seront sélectionnés comme parents dans chaque génération.
     best_solution = genetic_algorithm(200, 100, 20, equipements, start_date, end_date)
-    
+
     for debut, fin, equipement in best_solution:
         consommation = (fin - debut).total_seconds() / 3600 * equipement.puissance
         """ PeriodeActivite.objects.create(
@@ -759,7 +853,7 @@ def optimize_consumption():
             Equipement=equipement,
             consommation=consommation
         ) """
-        print("temps debut",debut,"temps fin",fin,"equi",equipement,"conso",consommation)
+        #print("temps debut",debut,"temps fin",fin,"equi",equipement,"conso",consommation)
 
 
 # Appeler la fonction principale
@@ -775,7 +869,7 @@ def getRapportByAlerte(request, alerteId):
             rapport.vu = True
             rapport.notifie = True
             rapport.save()
-        print(rapports)
+        #print(rapports)
         # Sérialiser les données des rapports
         serializer = RapportSerializer(rapports, many=True)
 
@@ -795,26 +889,26 @@ is_get_TH_par_jour_running = True
 is_get_TH_par_instant_running = True
 
 def stop_method_view(request):
-    print("**************************************************stop_method_view")
+    #print("**************************************************stop_method_view")
     global is_get_TH_par_heure_running, is_get_TH_par_jour_running, is_get_TH_par_instant_running
-    
+
     # Modifier les variables de contrôle pour arrêter les méthodes correspondantes
     is_get_TH_par_heure_running = False
     is_get_TH_par_jour_running = False
     is_get_TH_par_instant_running = False
-    
+
     return JsonResponse({'message': 'Méthodes arrêtées avec succès'}, status=200)
 
 def start_method_view(request):
-    print("**************************************************start_method_view")
-    
+    #print("**************************************************start_method_view")
+
     global is_get_TH_par_heure_running, is_get_TH_par_jour_running, is_get_TH_par_instant_running
-    
+
     # Modifier les variables de contrôle pour arrêter les méthodes correspondantes
     is_get_TH_par_heure_running = True
     is_get_TH_par_jour_running = True
     is_get_TH_par_instant_running = True
-    
+
     return JsonResponse({'message': 'Méthodes arrêtées avec succès'}, status=200)
 
 @api_view(['GET'])
@@ -829,29 +923,43 @@ def equipements_by_zone(request, zone_id):
     except Equipement.DoesNotExist:
         # Si la zone spécifiée n'existe pas, retourner une erreur 404
         return Response(status=status.HTTP_404_NOT_FOUND)
-@api_view(['GET'])   
+@api_view(['GET'])
 def  getEquipementRemplacement(request, rapportId):
     try:
         # Récupérer tous les rapports associés à l'equipement spécifique
         equi = EquipementAjouter.objects.filter(rapport=rapportId)
-      
+
         # Sérialiser les données des rapports
         serializer = EquipementAjouterSerializer(equi, many=True)
-        
+
         # Retourner la réponse avec les rapports sérialisés
         return Response(serializer.data)
     except Rapport.DoesNotExist:
         # Si l'equipement spécifiée n'existe pas, retourner une erreur 404
-        return Response(status=status.HTTP_404_NOT_FOUND)   
+        return Response(status=status.HTTP_404_NOT_FOUND)
 @api_view(['GET'])
 def getRapportByEquipement(request, equipementId):
     try:
         # Récupérer tous les rapports associés à l'equipement spécifique
         rapports = Rapport.objects.filter(equipement=equipementId)
-        print(rapports)
+        #print(rapports)
         # Sérialiser les données des rapports
         serializer = RapportSerializer(rapports, many=True)
-        
+
+        # Retourner la réponse avec les rapports sérialisés
+        return Response(serializer.data)
+    except Rapport.DoesNotExist:
+        # Si l'equipement spécifiée n'existe pas, retourner une erreur 404
+        return Response(status=status.HTTP_404_NOT_FOUND)
+@api_view(['GET'])
+def getAlertesByEquipement(request, equipementId):
+    try:
+        # Récupérer tous les rapports associés à l'equipement spécifique
+        rapports = Alerte.objects.filter(equipementId=equipementId)
+        #print(rapports)
+        # Sérialiser les données des rapports
+        serializer = AlerteSerializer(rapports, many=True)
+
         # Retourner la réponse avec les rapports sérialisés
         return Response(serializer.data)
     except Rapport.DoesNotExist:
@@ -862,11 +970,11 @@ def dateDesactivation(request, zoneId):
     try:
         # Récupérer tous les rapports associés à l'equipement spécifique
         equipement = HistoriqueADzone.objects.filter(zoneId=zoneId, option="desactiver").last()
-            
-        
+
+
         # Sérialiser les données des rapports
         serializer = HistoriqueADzoneSerializer(equipement, many=False)
-        
+
         # Retourner la réponse avec les rapports sérialisés
         return Response(serializer.data)
     except Rapport.DoesNotExist:
@@ -1050,7 +1158,7 @@ class EquipementsTotalConsommation(APIView):
 class zonesTotalConsommation(APIView):
     def get(self, request):
         try:
-            #print('zzzzzzzzzzzzzzzzzzzzzz')
+            ##print('zzzzzzzzzzzzzzzzzzzzzz')
             zones_consommation = []
             zones = Zone.objects.all()
             for zone in zones:
@@ -1066,7 +1174,7 @@ class zonesTotalConsommation(APIView):
                     'consommation_W': consommation_totale*1000,
                     'consommation_kW': consommation_totale
                 })
-                #print('Zone_cons: ', zones_consommation, '\n')
+                ##print('Zone_cons: ', zones_consommation, '\n')
 
             zones_consommation = sorted(zones_consommation, key=itemgetter('consommation_W'), reverse=True)
             return Response(zones_consommation, status=status.HTTP_200_OK)
@@ -1090,7 +1198,7 @@ class etagesTotalConsommation(APIView):
                     'batimentId': etage.batimentId.id,
                     'nomBatiment': etage.batimentId.nomBatiment,
                     'consommation_W': consommation_totale*1000,
-                    'consommation_kW': consommation_totale 
+                    'consommation_kW': consommation_totale
                 })
 
             #etages_consommation = sorted(etages_consommation, key=itemgetter('consommation_W'), reverse=True)
@@ -1111,7 +1219,7 @@ class batimentsTotalConsommation(APIView):
                     'consommation_W': consommation_totale*1000,
                     'consommation_kW': consommation_totale
                 })
-                #print('Zone_cons: ', batiments_consommation, '\n')
+                ##print('Zone_cons: ', batiments_consommation, '\n')
 
             #batiments_consommation = sorted(batiments_consommation, key=itemgetter('consommation_W'), reverse=True)
             return Response(batiments_consommation, status=status.HTTP_200_OK)
@@ -1126,7 +1234,7 @@ class hopitalTotalConsommation(APIView):
             consommation_totale = 0
             for batiment in batiments:
               consommation_totale += batiment.calculerConsommationTotaleBatiment()
-              #print('Zone_cons: ', batiments_consommation, '\n')
+              ##print('Zone_cons: ', batiments_consommation, '\n')
 
             return Response(consommation_totale, status=status.HTTP_200_OK)
         except Exception as e:
@@ -1141,8 +1249,8 @@ class EquipementsOnlyConsommationParPeriode(APIView):
             # Récupérez les paramètres de la requête GET
             date_debut = request.GET.get('dateDebut')
             date_fin = request.GET.get('dateFin')
-            #print(date_debut, ' -> ', date_fin)
-            #print('*******************debut ', date_debut, 'fin ', date_fin)
+            ##print(date_debut, ' -> ', date_fin)
+            ##print('*******************debut ', date_debut, 'fin ', date_fin)
             equipements = Equipement.objects.all()
             equipements_consommation = []
             for equipement in equipements:
@@ -1152,13 +1260,51 @@ class EquipementsOnlyConsommationParPeriode(APIView):
                     'consommation_W': consommation*1000,
                     'consommation_kW': consommation
                 })
-                #print('* ', equipements_consommation[-1], '\n\n**')
+                ##print('* ', equipements_consommation[-1], '\n\n**')
             # Trier les équipements par consommation totale décroissante
             equipements_consommation = sorted(equipements_consommation, key=itemgetter('consommation_kW'), reverse=True)
             return Response(equipements_consommation, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+def traiter_autres_presence(equi):
+    tempsDebut = None
+    verif = False
+    chemin_fichier = os.path.join('media', 'donnees' + str(equi.zoneE.id) + '.json')
+
+    if os.path.exists(chemin_fichier):
+        with open(chemin_fichier, 'r') as fichier:
+            data = json.load(fichier)
+            for timestamp, values in data.items():
+                timestamp_date = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                if (timestamp_date.month in [6] and timestamp_date.day in [27]) :
+                  #print('******************** DAY',timestamp_date.day)
+                  presence = values['presence']
+                  if presence == 1  :
+                      puissance = equi.puissance
+                      tempsDebut = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                      if not verif:
+                          periode_activite = PeriodeActivite.objects.create(
+                              tempsDebut=tempsDebut,
+                              tempsFin=None,
+                              Equipement=equi
+                          )
+                          verif = True
+                  else:
+                      print('deb',tempsDebut)
+                      if tempsDebut is not None:
+                          print("else")
+                          verif = False
+                          derniere_periode = PeriodeActivite.objects.filter(Equipement=equi).latest('tempsDebut')
+                          derniere_periode.tempsFin = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                          derniere_periode.calculer_consommation()
+                          derniere_periode.save()
+                          print("temp deb-fin",tempsDebut,derniere_periode.tempsFin)
+                          tempsDebut = None
+                          
+    else:
+        # Le fichier de données pour le local n'existe pas.
+        pass
 
 class EquipementsConsommationParPeriode(APIView):
     def get(self, request):
@@ -1166,12 +1312,13 @@ class EquipementsConsommationParPeriode(APIView):
             # Récupérez les paramètres de la requête GET
             date_debut = request.GET.get('dateDebut')
             date_fin = request.GET.get('dateFin')
-            #print(date_debut, ' -> ', date_fin)
-            #print('*******************debut ', date_debut, 'fin ', date_fin)
+            ##print(date_debut, ' -> ', date_fin)
+            #print('hereeeeeeeeeeeeeeeeeeee*******************debut ', date_debut, 'fin ', date_fin)
             equipements = Equipement.objects.all()
             equipements_consommation = []
             for equipement in equipements:
                 consommation= equipement.calculerConsommationParPeriode(date_debut, date_fin)
+                #print("equ id ",equipement.id,"total",consommation)
                 equipements_consommation.append({
                     'id': equipement.id,
                     'nom': equipement.nom,
@@ -1190,7 +1337,7 @@ class EquipementsConsommationParPeriode(APIView):
                     'consommation_W': consommation*1000,
                     'consommation_kW': consommation
                 })
-                #print('* ', equipements_consommation[-1], '\n\n**')
+                ##print('* ', equipements_consommation[-1], '\n\n**')
             # Trier les équipements par consommation totale décroissante
             equipements_consommation = sorted(equipements_consommation, key=itemgetter('consommation_kW'), reverse=True)
             return Response(equipements_consommation, status=status.HTTP_200_OK)
@@ -1199,9 +1346,11 @@ class EquipementsConsommationParPeriode(APIView):
 class EquipementConsommationParPeriode(APIView):
     def get(self, request, equipement_id):
         try:
+            
             # Récupérez les paramètres de la requête GET
             date_debut = request.GET.get('dateDebut')
             date_fin = request.GET.get('dateFin')
+            #print("datedeb",date_debut,"datefin",date_fin)
             equipement = get_object_or_404(Equipement, id=equipement_id)
             consommation= equipement.calculerConsommationParPeriode(date_debut, date_fin)
             equipements_consommation = {
@@ -1220,7 +1369,7 @@ class EquipementConsommationParPeriode(APIView):
                 'consommation_W': consommation*1000,
                 'consommation_kW': consommation
             }
-            #print('**',  equipements_consommation)
+            ##print('**',  equipements_consommation)
             return Response(equipements_consommation, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -1247,7 +1396,7 @@ class localConsommationParPeriode(APIView):
                     'consommation_W': consommation*1000,
                     'consommation_kW': consommation
                 })
-                #print('Zone_cons: ', zones_consommation, '\n')
+                ##print('Zone_cons: ', zones_consommation, '\n')
 
             #zones_consommation = sorted(zones_consommation, key=itemgetter('consommation_W'), reverse=True)
             return Response(zones_consommation, status=status.HTTP_200_OK)
@@ -1274,7 +1423,7 @@ class etagesConsommationParPeriode(APIView):
                     'batimentId': etage.batimentId.id,
                     'nomBatiment': etage.batimentId.nomBatiment,
                     'consommation_W': consommation*1000,
-                    'consommation_kW': consommation 
+                    'consommation_kW': consommation
                 })
 
             #etages_consommation = sorted(etages_consommation, key=itemgetter('consommation_W'), reverse=True)
@@ -1330,10 +1479,10 @@ class hopitalConsommationParMois(APIView):
               batiments = Batiment.objects.all()
               consommation = 0
               for batiment in batiments:
-                #print('2024-'+i+'-01 00:00:00 -> '+'2024-'+i+'-'+derniers_jours_de_mois[int(i)-1])
+                ##print('2024-'+i+'-01 00:00:00 -> '+'2024-'+i+'-'+derniers_jours_de_mois[int(i)-1])
                 consommation += batiment.calculerConsommationBatimentParPeriode('2024-'+i+'-01 00:00:00', '2024-'+i+'-'+derniers_jours_de_mois[int(i)-1]+' 00:00:00')
               consommations_mois.append(consommation)
-            #print('Consommations mois : ', consommations_mois)
+            ##print('Consommations mois : ', consommations_mois)
             return Response(consommations_mois, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -1375,7 +1524,7 @@ class ChangePasswordEmail(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data  # Utilisez request.data pour récupérer les données du corps de la requête
         email = data.get('email')
-        #print("email ,"+email)
+        ##print("email ,"+email)
         user = User.objects.filter(email=email).first()
         if user:
             # Générer un token unique
@@ -1445,7 +1594,7 @@ def reset_password_avec_uid(request, uidb64, token):
     if user is not None and default_token_generator.check_token(user, token):
         # Réinitialiser le mot de passe
         new_password = request.data.get('newPassword')
-        #print('le nouveau mot de passe', new_password)
+        ##print('le nouveau mot de passe', new_password)
         user.set_password(new_password)
         user.save()
         return Response({'message': 'Mot de passe réinitialisé avec succès.'}, status=status.HTTP_200_OK)
@@ -1457,7 +1606,7 @@ class UpdateEmail(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data  # Utilisez request.data pour récupérer les données du corps de la requête
         email = data.get('email')
-        #print("email ,"+email)
+        ##print("email ,"+email)
 
         code = data.get('code')
         send_mail(
@@ -1541,8 +1690,8 @@ from .models import PeriodeActivite  # Assurez-vous d'importer votre modèle Per
 """ def traiter_chauffage(equi):
     tempsDebut = None
     verif = False
-    chemin_fichier = os.path.join('media', 'donnees' + str(equi.zoneE.id) + '.json') 
-    #print('chemin_fichier ',chemin_fichier) # Assurez-vous que votre fichier est au format JSON
+    chemin_fichier = os.path.join('media', 'donnees' + str(equi.zoneE.id) + '.json')
+    ##print('chemin_fichier ',chemin_fichier) # Assurez-vous que votre fichier est au format JSON
     if os.path.exists(chemin_fichier):
         with open(chemin_fichier, 'r') as fichier:
             data = json.load(fichier)
@@ -1550,8 +1699,8 @@ from .models import PeriodeActivite  # Assurez-vous d'importer votre modèle Per
                 temperature = values['temperature']
                 humidite = values['humidite']
                 # Ajoutez ici la logique pour vérifier la température et l'humidité et contrôler le chauffage/climatisation
-                #print('--------------------la temperature :  ', temperature, 'maxT :  ', equi.zoneE.maxT)
-                
+                ##print('--------------------la temperature :  ', temperature, 'maxT :  ', equi.zoneE.maxT)
+
                 if temperature < equi.zoneE.maxT:
                     # Le chauffage est actif
                     puissance = equi.puissance  # Supposons que le champ pour la puissance soit 'puissance'
@@ -1581,8 +1730,8 @@ from .models import PeriodeActivite  # Assurez-vous d'importer votre modèle Per
 def traiter_chauffage(equi):
     tempsDebut = None
     verif = False
-    chemin_fichier = os.path.join('media', 'prediction' + str(equi.zoneE.id) + '.json') 
-    #print('chemin_fichier ',chemin_fichier) # Assurez-vous que votre fichier est au format JSON
+    chemin_fichier = os.path.join('media', 'prediction' + str(equi.zoneE.id) + '.json')
+    ##print('chemin_fichier ',chemin_fichier) # Assurez-vous que votre fichier est au format JSON
     if os.path.exists(chemin_fichier):
         with open(chemin_fichier, 'r') as fichier:
             data = json.load(fichier)
@@ -1590,20 +1739,20 @@ def traiter_chauffage(equi):
                 temperature = values['temperature']
                 humidite = values['humidite']
                 # Ajoutez ici la logique pour vérifier la température et l'humidité et contrôler le chauffage/climatisation
-                #print('--------------------la temperature :  ', temperature, 'maxT :  ', equi.zoneE.maxT)
+                ##print('--------------------la temperature :  ', temperature, 'maxT :  ', equi.zoneE.maxT)
                 timestamp_date = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:00')
-                print('*******************timeexacte',timestamp)
-                
+                #print('*******************timeexacte',timestamp)
+
                 # Vérifier si la date se situe dans les mois d'hiver
                 #if (timestamp_date.month in [1, 2, 3, 4]) or (timestamp_date.month == 5 and timestamp_date.day <= 15):
-               
+
                 if temperature < equi.zoneE.maxT:
                       # Le chauffage est actif
                       puissance = equi.puissance  # Supposons que le champ pour la puissance soit 'puissance'
-  
+
                       # Calculer la consommation
                       tempsDebut = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")  # Convertir le timestamp en datetime
-                      print('-------------------temps debut',tempsDebut)
+                      #print('-------------------temps debut',tempsDebut)
                       if not verif:
                           # Créer une nouvelle période d'activité
                           periode_activite = PeriodeActiviteLastYear.objects.create(
@@ -1618,25 +1767,25 @@ def traiter_chauffage(equi):
                           derniere_periode = PeriodeActiviteLastYear.objects.filter(Equipement=equi).latest('tempsDebut')
 
                           derniere_periode.tempsFin = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
-                          print("temps fin ",derniere_periode.tempsFin)
+                          #print("temps fin ",derniere_periode.tempsFin)
                           derniere_periode.calculer_consommation()
                           derniere_periode.save()
                           tempsDebut = None
     else:
         # Le fichier de données pour le local n'existe pas.
       pass
-             
+
 import json
 import os
 from datetime import datetime
 from .models import PeriodeActivite  # Assurez-vous d'importer votre modèle PeriodeActivite ici
 ################# traiter climatiseur avant par mois######################
-""" 
+"""
 def traiter_climatiseur(equi):
     tempsDebut = None
     verif = False
-    chemin_fichier = os.path.join('media', 'donnees' + str(equi.zoneE.id) + '.json') 
-    #print('chemin_fichier ',chemin_fichier) # Assurez-vous que votre fichier est au format JSON
+    chemin_fichier = os.path.join('media', 'donnees' + str(equi.zoneE.id) + '.json')
+    ##print('chemin_fichier ',chemin_fichier) # Assurez-vous que votre fichier est au format JSON
     if os.path.exists(chemin_fichier):
         with open(chemin_fichier, 'r') as fichier:
             data = json.load(fichier)
@@ -1644,8 +1793,8 @@ def traiter_climatiseur(equi):
                 temperature = values['temperature']
                 humidite = values['humidite']
                 # Ajoutez ici la logique pour vérifier la température et l'humidité et contrôler le chauffage/climatisation
-                #print('--------------------la temperature :  ', temperature, 'maxT :  ', equi.zoneE.maxT)
-                
+                ##print('--------------------la temperature :  ', temperature, 'maxT :  ', equi.zoneE.maxT)
+
                 if temperature > equi.zoneE.maxT:
                     # Le chauffage est actif
                     puissance = equi.puissance  # Supposons que le champ pour la puissance soit 'puissance'
@@ -1677,8 +1826,8 @@ def traiter_climatiseur(equi):
 def traiter_climatiseur(equi):
     tempsDebut = None
     verif = False
-    chemin_fichier = os.path.join('media', 'prediction' + str(equi.zoneE.id) + '.json') 
-    #print('chemin_fichier ',chemin_fichier) # Assurez-vous que votre fichier est au format JSON
+    chemin_fichier = os.path.join('media', 'prediction' + str(equi.zoneE.id) + '.json')
+    ##print('chemin_fichier ',chemin_fichier) # Assurez-vous que votre fichier est au format JSON
     if os.path.exists(chemin_fichier):
         with open(chemin_fichier, 'r') as fichier:
             data = json.load(fichier)
@@ -1686,12 +1835,12 @@ def traiter_climatiseur(equi):
                 temperature = values['temperature']
                 humidite = values['humidite']
                 # Ajoutez ici la logique pour vérifier la température et l'humidité et contrôler le chauffage/climatisation
-                print('--------------------la temperature :  ', temperature, 'maxT :  ', equi.zoneE.maxT)
+                #print('--------------------la temperature :  ', temperature, 'maxT :  ', equi.zoneE.maxT)
                 timestamp_date = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
-                
+
                 # Vérifier si la date se situe dans les mois d'hiver
                 if (timestamp_date.month in [7,8]) :
-               
+
                   if temperature > equi.zoneE.minT:
                       # Le chauffage est actif
                       puissance = equi.puissance  # Supposons que le champ pour la puissance soit 'puissance'
@@ -1727,7 +1876,7 @@ def traiter_lampe(equi):
     tempsDebut = None
     verif = False
     chemin_fichier = os.path.join('media', 'donnees' + str(equi.zoneE.id) + '.json')
-    
+
     if os.path.exists(chemin_fichier):
         with open(chemin_fichier, 'r') as fichier:
             data = json.load(fichier)
@@ -1757,25 +1906,25 @@ def traiter_lampe(equi):
 def traiter_humidificateur(equi):
     tempsDebut = None
     verif = False
-    chemin_fichier = os.path.join('media', 'donnees' + str(equi.zoneE.id) + '.json') 
-    #print('chemin_fichier ',chemin_fichier) # Assurez-vous que votre fichier est au format JSON
+    chemin_fichier = os.path.join('media', 'donnees' + str(equi.zoneE.id) + '.json')
+    ##print('chemin_fichier ',chemin_fichier) # Assurez-vous que votre fichier est au format JSON
     if os.path.exists(chemin_fichier):
         with open(chemin_fichier, 'r') as fichier:
             data = json.load(fichier)
             for timestamp, values in data.items():
-                
+
                 humidite = values['humidite']
                 # Ajoutez ici la logique pour vérifier la température et l'humidité et contrôler le chauffage/climatisation
-                #print('--------------------la temperature :  ', temperature, 'maxT :  ', equi.zoneE.maxT)
-                
+                ##print('--------------------la temperature :  ', temperature, 'maxT :  ', equi.zoneE.maxT)
+
                 if  humidite > equi.zoneE.maxT:
                     # Le chauffage est actif
                     puissance = equi.puissance  # Supposons que le champ pour la puissance soit 'puissance'
 
                     # Calculer la consommation
                     tempsDebut = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
-                    print("time",timestamp)
-                    print("debut",tempsDebut)  # Convertir le timestamp en datetime
+                    #print("time",timestamp)
+                    #print("debut",tempsDebut)  # Convertir le timestamp en datetime
                     if not verif:
                         # Créer une nouvelle période d'activité
                         periode_activite = PeriodeActivite.objects.create(
@@ -1796,21 +1945,60 @@ def traiter_humidificateur(equi):
         # Le fichier de données pour le local n'existe pas.
       pass
 
+def traiter_autres(equi):
+    tempsDebut = None
+    verif = False
+    chemin_fichier = os.path.join('media', 'donnees' + str(equi.zoneE.id) + '.json')
+
+    if os.path.exists(chemin_fichier):
+        with open(chemin_fichier, 'r') as fichier:
+            data = json.load(fichier)
+            r=0
+            for timestamp, values in data.items():
+                timestamp_date = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                # Vérifier si la date se situe dans les mois d'hiver
+                if (timestamp_date.month in [6]) :
+                  presence = values['presence']
+                  r = random.uniform(0.0,1.0)
+                  if presence == 1 and r > 0.7 :
+                      puissance = equi.puissance
+                      tempsDebut = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                      if not verif:
+                          periode_activite = PeriodeActivite.objects.create(
+                              tempsDebut=tempsDebut,
+                              tempsFin=None,
+                              Equipement=equi
+                          )
+                          verif = True
+                  else:
+                      if tempsDebut is not None:
+                          derniere_periode = PeriodeActivite.objects.filter(Equipement=equi).latest('tempsDebut')
+                          if derniere_periode.tempsFin is None :
+                            verif = False
+                            derniere_periode.tempsFin = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                            derniere_periode.calculer_consommation()
+                            derniere_periode.save()
+                            tempsDebut = None
+    else:
+        # Le fichier de données pour le local n'existe pas.
+        pass
+
+
 """ equipementss = Equipement.objects.filter(Q(nom__icontains='limatiseur') )
 
 for equipements in equipementss:
- traiter_climatiseur(equipements)  
+ traiter_climatiseur(equipements)
 import django.utils.timezone as tz
-print(tz.get_current_timezone())  """ 
+#print(tz.get_current_timezone())  """
 #################################### remplir les equipements speciaux ######################
-""" 
+"""
 import random
 from datetime import datetime, timedelta
 from .models import PeriodeActivite, Equipement
 
 #Liste des équipements disponibles
 equipements = Equipement.objects.filter()
-print(equipements)
+#print(equipements)
 #Fonction pour générer une heure aléatoire dans une journée
 
 def randomtime():
@@ -1825,16 +2013,16 @@ end_date = datetime(2024, 6, 30)
 
     # Boucle à travers chaque équipement
 for equipement in equipements:
-        
-            print('equipement li rahou fih',equipement)
+
+            #print('equipement li rahou fih',equipement)
             traiter_lampe(equipement)
-        
+
  """
 # Passer au jour suivant
-   
+
 
 ###################################### remplir periode activité pour tous les autres types #######################
-""" 
+
 import random
 from datetime import datetime, timedelta
 from .models import PeriodeActivite, Equipement
@@ -1847,14 +2035,23 @@ from .models import Equipement
 from django.db.models import Q
 
 equipements = Equipement.objects.exclude(
-    Q(nom__icontains='humidificateur') |
+  
+    Q(nom__icontains='limatiseur') |
     Q(nom__icontains='hauffage') |
-    Q(nom__icontains='limatiseur') 
- 
+    Q(nom__icontains='lateur') |
+    Q(nom__icontains='Led') |
+    Q(nom__icontains='humidificateur')
+    
 )
 
+""" 
+for e in equipements :
+   traiter_autres_presence(e)
+ for e in equipements :
+   traiter_autres(e)
+ """
 #Fonction pour générer une heure aléatoire dans une journée
-
+"""
 def randomtime():
     return timedelta(hours=random.randint(0, 23), minutes=random.randint(0, 59), seconds=random.randint(0, 59))
 
@@ -1867,7 +2064,7 @@ current_date = start_date
 while current_date <= end_date:
     # Boucle à travers chaque équipement
     for equipement in equipements:
-       
+
         # Générer un nombre aléatoire de périodes d'activité pour chaque équipement et chaque jour
           num_activites = random.randint(1, 3)
 
@@ -1981,7 +2178,7 @@ def générerH1(date, prec):
   panne_probabilite = 0.05
 
     # Vérifier si une panne se produit
-  
+
   #Possibilité de réécrire la valeur précédente
   if round(random.uniform(0, 1), 0)==1 :
     return prec
@@ -2061,7 +2258,7 @@ def générerT2(date, prec):
   panne_probabilite = 0.05
 
     # Vérifier si une panne se produit
-  
+
   #Possibilité de réécrire la valeur précédente
 
   if round(random.uniform(0, 1), 0)==1 :
@@ -2222,7 +2419,7 @@ def générerT3(date, prec):
   panne_probabilite = 0.05
 
     # Vérifier si une panne se produit
- 
+
   #Possibilité de réécrire la valeur précédente
   if round(random.uniform(0, 1), 0)==1 :
     return prec
@@ -2302,7 +2499,7 @@ def générerH3(date, prec):
   panne_probabilite = 0.05
 
     # Vérifier si une panne se produit
- 
+
   #Possibilité de réécrire la valeur précédente
   if round(random.uniform(0, 1), 0)==1 :
     return prec
@@ -2382,7 +2579,7 @@ def générerT4(date, prec):
   panne_probabilite = 0.05
 
     # Vérifier si une panne se produit
-  
+
   #Possibilité de réécrire la valeur précédente
   if round(random.uniform(0, 1), 0)==1 :
     return prec
@@ -2462,7 +2659,7 @@ def générerH4(date, prec):
   panne_probabilite = 0.05
 
     # Vérifier si une panne se produit
-  
+
   #Possibilité de réécrire la valeur précédente
   if round(random.uniform(0, 1), 0)==1 :
     return prec
@@ -2543,7 +2740,7 @@ def générerT5(date, prec):
   panne_probabilite = 0.05
 
     # Vérifier si une panne se produit
-  
+
   #Possibilité de réécrire la valeur précédente
   if round(random.uniform(0, 1), 0)==1 :
     return prec
@@ -2623,7 +2820,7 @@ def générerH5(date, prec):
   panne_probabilite = 0.05
 
     # Vérifier si une panne se produit
- 
+
   #Possibilité de réécrire la valeur précédente
   if round(random.uniform(0, 1), 0)==1 :
     return prec
@@ -2700,7 +2897,104 @@ def générerH5(date, prec):
 
   return T
 
-################################## generate json file for all zones 
+def générerP2(date, h1, h2, h3, h4, h5):
+    if date.hour in nuit:
+        return 0
+    elif date.hour == h1 or date.hour == h1 + 1:
+        #print('bbbbbbbbbbbbbbbbbbbbbbbb')
+        return 1
+    elif date.hour == h2:
+        #print('ccccccccccccccccccccccccc')
+        return 1
+    elif date.hour == h3 or date.hour == h3 + 1:
+        #print('dddddddddddddddddddddddddddd')
+        return 1
+    elif date.hour == h4 or date.hour == h4 + 1:
+        #print('dddddddddddddddddddddddddddd')
+        return 1
+    elif date.hour == h5 :
+        #print('dddddddddddddddddddddddddddd')
+        return 1
+    else:
+        return 0
+"""
+def generateJSON(minT):
+  data = {}
+  # Définir la période de temps
+  date1 = datetime(2024, 6, 1, 0, 0, 0)
+  date2 = datetime(2024, 7, 1, 0, 0, 0)
+  delta = timedelta(minutes=1)
+  c=1
+  # Générer des données pour chaque jour
+  # Utilisez request.data pour récupérer les données du corps de la requête
+  param2 = minT
+  if param2 =='17':
+    T_func = générerT1
+    H_func = générerH1
+
+  elif param2 == '15':
+    T_func = générerT2
+    H_func = générerH2
+
+  elif param2 == '5':
+    T_func = générerT3
+    H_func = générerH3
+
+  elif param2 == '-18':
+    T_func = générerT4
+    H_func = générerH4
+
+  else:
+    T_func = générerT5
+    H_func = générerH5
+
+  nbPeriodesParJour = 0
+  h1 = 0
+  h2 = 0
+  h3 = 0
+  h4 = 0
+  h5 = 0
+  while date1 <= date2:
+    if(c==1):
+      prec1=22
+      prec2=40
+      prec3=-1
+      c=c+1
+
+    if date1.hour == 0 and date1.minute == 0:
+      ##print('date: ', date1)
+      h1 = random.randint(6, 19)
+
+      h2 = h1
+      while h2 == h1 or h2 == h1+1 :
+        h2 = random.randint(6, 19)
+
+      h3 = h2
+      while h3 == h1 or h3 == h1+1 or h3 == h2  :
+        h3 = random.randint(6, 19)
+
+      h4 = h3
+      while h4 == h1 or h4 == h1+1 or h4 == h2 or h4 == h3 or h4 == h3+1:
+        h4 = random.randint(6, 19)
+
+      h5 = h3
+      while h5 == h1 or h5 == h1+1 or h5 == h2 or h5 == h3 or h5 == h3+1 or h5 == h4 or h5 == h4+1:
+        h5 = random.randint(6, 19)
+
+    prec1 = float(T_func(date1, prec1))
+    prec2 = float(H_func(date1,prec2))
+    prec3 = générerP2(date1, h1, h2, h3, h4, h5)
+
+    data[date1.strftime('%Y-%m-%d %H:%M:%S')] = {
+        'temperature': T_func(date1, prec1),
+        'humidite': H_func(date1, prec2),
+        'presence': prec3
+    }
+
+    date1 += delta
+  return data
+ """
+################################## generate json avec contrainte presence file for all zones
 from django.http import JsonResponse
 from django.core.files import File
 import json
@@ -2708,75 +3002,24 @@ import os
 from datetime import datetime, timedelta
 import random
 
-def generateJSON(minT):
-      data = {}
+""" def generateJSONALL():
+  Zones=Zone.objects.all()
+  for zone in Zones:
+    donnees_aleatoires = generateJSON(zone.minT)
+    json_data = json.dumps(donnees_aleatoires, indent=2)
 
-      # Définir la période de temps
-      date1 = datetime(2024, 1, 1, 0, 0, 0)
-      date2 = datetime(2024, 6, 30, 23, 59, 0)
-      delta = timedelta(minutes=1)
+  # Définir le chemin du fichier dans le dossier media
+    chemin_fichier = os.path.join('media', 'THP_' + str(zone.id) + '.json')
 
-      c=1
-      # Générer des données pour chaque jour
-       # Utilisez request.data pour récupérer les données du corps de la requête
-     
-      param2 = minT
-      if param2 =='17':
-        T_func = générerT1
-        H_func = générerH1
+  # Écrire les données JSON dans le fichier
+    with open(chemin_fichier, 'w') as fichier:
+      fichier.write(json_data)
 
-      elif param2 == '15':
-        T_func = générerT2
-        H_func = générerH2
+generateJSONALL() """
 
-      elif param2 == '5':
-        T_func = générerT3
-        H_func = générerH3
 
-      elif param2 == '-18':
-        T_func = générerT4
-        H_func = générerH4
 
-      else:
-        T_func = générerT5
-        H_func = générerH5     
 
-      while date1 <= date2:
-        if(c==1):
-          prec1=22
-          prec2=40
-          c=c+1
-
-        prec1 = float(T_func(date1, prec1))
-        prec2 = float(H_func(date1,prec2))
-                  
-                  
-
-        data[date1.strftime('%Y-%m-%d %H:%M:%S')] = {
-            'temperature': T_func(date1, prec1),
-            'humidite': H_func(date1, prec2),
-            'presence': random.randint(0,1)
-                      
-                    
-        }
-
-        date1 += delta
-
-      return data
-def generateJSONALL():
-
-      Zones=Zone.objects.all()
-      for zone in Zones:
-        donnees_aleatoires = generateJSON(zone.minT)
-        json_data = json.dumps(donnees_aleatoires, indent=2)
-
-      # Définir le chemin du fichier dans le dossier media
-        chemin_fichier = os.path.join('media', 'donnees' + str(zone.id) + '.json')
-
-      # Écrire les données JSON dans le fichier
-        with open(chemin_fichier, 'w') as fichier:
-          fichier.write(json_data)
-#generateJSONALL()
 #************************************************ generateJSON File ********************************
 class generateExcel(APIView):
 
@@ -2798,7 +3041,7 @@ class generateExcel(APIView):
         with open(chemin_fichier, 'w') as fichier:
           fichier.write(json_data)
 
-        
+
         return Response('done', status=status.HTTP_200_OK)
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -2826,7 +3069,7 @@ class historiqueUtilisateur(APIView):
             change=param3,
             action=param4,
             date = datetime.now()
-                
+
         )
         return Response('done', status=status.HTTP_200_OK)
 class generatePeriode(APIView):
@@ -2837,7 +3080,7 @@ class generatePeriode(APIView):
             equipement = Equipement.objects.get(id=param1)
         except Equipement.DoesNotExist:
             return Response({'error': 'Equipement not found'}, status=status.HTTP_404_NOT_FOUND)
-        
+
         def randomtime():
             return timedelta(hours=random.randint(0, 23), minutes=random.randint(0, 59), seconds=random.randint(0, 59))
 
@@ -2861,7 +3104,7 @@ class generatePeriode(APIView):
             consommation = duree * puissance
 
             # Afficher les détails pour le débogage
-            print("temps debut:", debut, "temps fin:", fin, "consommation:", consommation)
+            ##print("temps debut:", debut, "temps fin:", fin, "consommation:", consommation)
 
             # Créer une nouvelle période d'activité
             PeriodeActivite.objects.create(
@@ -2875,7 +3118,7 @@ class generatePeriode(APIView):
 
 """ def generateJSONALL(maxT,maxH,minT,minH,id):
 
-       
+
         donnees_aleatoires = generateJSON(minT,maxT,minH,maxH)
         json_data = json.dumps(donnees_aleatoires, indent=2)
 
@@ -2886,8 +3129,8 @@ class generatePeriode(APIView):
         with open(chemin_fichier, 'w') as fichier:
           fichier.write(json_data)
 
-        
-  """       
+
+  """
 
 
 ############################## fin call and generate file JSON FOR NEW ZONE
@@ -2935,29 +3178,29 @@ def genererTemp(date, prec):
   global compteur
 
   #time.sleep(1)
-  #print('********* date',date,'********* prec',prec)
+  ##print('********* date',date,'********* prec',prec)
     # Augmenter progressivement la température jusqu'à 30 si prec > 26
   if random.random() < panne_probabilite and k1==False and j1==0 and random.randint(0, 1)==0:
       k1=True  # Générer une valeur spécifique pour indiquer une panne (par exemple, -999)
       T = prec-random.uniform(0.4, 0.8)
-      #print('panne   k',k1,'      j',j1,'             T',T)
-      
+      ##print('panne   k',k1,'      j',j1,'             T',T)
+
   elif(k1==True):
-    if(prec>10.0 and  j1==0): 
+    if(prec>10.0 and  j1==0):
         T=prec-random.uniform(0.4, 0.8)
         k1=True
-        #print('cas >10    k',k1,'      j',j1,'             T',T)
-    
-   
-       
+        ##print('cas >10    k',k1,'      j',j1,'             T',T)
+
+
+
     elif(compteur1<5 and (prec <10 or prec ==10) ) :
-      T =prec 
+      T =prec
       k1=True
       j1=1
       compteur1=compteur1+1
-      #print('cas =10    k',k1,'      j',j1,'             T',T,'              compteur',compteur1)
-      
-    
+      ##print('cas =10    k',k1,'      j',j1,'             T',T,'              compteur',compteur1)
+
+
     elif compteur1==5:
       T=prec-random.uniform(0.4, 0.8)
       compteur1=compteur1+1
@@ -2965,34 +3208,34 @@ def genererTemp(date, prec):
 
       T=prec+random.uniform(0.4, 0.8)
       k1=True
-      #print('cas >26    k',k,'      j',j,'             T',T)
-      
+      ##print('cas >26    k',k,'      j',j,'             T',T)
+
     elif(prec<16.0 and prec>17.0  or prec==17.0  or prec==16.0 and j1==1 ):
       k1=False
       j1=0
       compteur1=0
-      #print('cas =26    k',k,'      j',j,'             T',T)
+      ##print('cas =26    k',k,'      j',j,'             T',T)
   if random.random() < panne_probabilite and k==False and j==0 and random.randint(0, 1)==1:
       k=True  # Générer une valeur spécifique pour indiquer une panne (par exemple, -999)
       T = prec+random.uniform(0.4, 0.8)
-      #print('panne   k',k,'      j',j,'             T',T)
-      
+      ##print('panne   k',k,'      j',j,'             T',T)
+
   elif(k==True):
-    if(prec<30.0 and  j==0): 
+    if(prec<30.0 and  j==0):
         T=prec+random.uniform(0.4, 0.8)
         k=True
-        #print('cas <30    k',k,'      j',j,'             T',T)
-    
-   
-       
+        ##print('cas <30    k',k,'      j',j,'             T',T)
+
+
+
     elif(compteur<5 and (prec >30 or prec ==30) ) :
-      T =prec 
+      T =prec
       k=True
       j=1
       compteur=compteur+1
-      #print('cas =30    k',k,'      j',j,'             T',T,'              compteur',compteur)
-      
-    
+      ##print('cas =30    k',k,'      j',j,'             T',T,'              compteur',compteur)
+
+
     elif compteur==5:
       T=prec-random.uniform(0.4, 0.8)
       compteur=compteur+1
@@ -3000,18 +3243,18 @@ def genererTemp(date, prec):
 
       T=prec-random.uniform(0.4, 0.8)
       k=True
-      #print('cas >26    k',k,'      j',j,'             T',T)
-      
+      ##print('cas >26    k',k,'      j',j,'             T',T)
+
     elif(prec>25.0 and prec<26.0  or prec==25.0  or prec==26.0 and j==1 ):
       k=False
       j=0
       compteur=0
-      #print('cas =26    k',k,'      j',j,'             T',T)
+      ##print('cas =26    k',k,'      j',j,'             T',T)
   elif( k==False and j==0 and k1==False and j1==0 ):
-    #print('cas ordinaire    k',k,'      j',j,'             T',T)
-    
+    ##print('cas ordinaire    k',k,'      j',j,'             T',T)
+
     if round(random.uniform(0.2, 0.9), 0)==1 :
-      return (prec) 
+      return (prec)
 
     T='0'
     i=1 # il tente maximum 10 fois pour avoir une valeur proche à la précédente
@@ -3094,65 +3337,7 @@ import json
 import os
 from datetime import datetime, timedelta
 import random
-'''class generateJSON(APIView):
 
-    def post(self, request, *args, **kwargs):
-      data = {}
-
-      # Définir la période de temps
-      date1 = datetime(2024, 1, 1, 0, 0, 0)
-      date2 = datetime(2024, 6, 30, 23, 59, 0)
-      delta = timedelta(minutes=1)
-
-      c=1
-      # Générer des données pour chaque jour
-      data1 = request.data  # Utilisez request.data pour récupérer les données du corps de la requête
-     
-      param2 = data1.get('minT')
-      if param2 =='17':
-        T_func = générerT1
-        H_func = générerH1
-
-      elif param2 == '15':
-        T_func = générerT2
-        H_func = générerH2
-
-      elif param2 == '5':
-        T_func = générerT3
-        H_func = générerH3
-
-      elif param2 == '-18':
-        T_func = générerT4
-        H_func = générerH4
-
-      else:
-        T_func = générerT5
-        H_func = générerH5     
-
-      while date1 <= date2:
-        if(c==1):
-          prec1=22
-          prec2=40
-          c=c+1
-
-        prec1 = float(T_func(date1, prec1))
-        prec2 = float(H_func(date1,prec2))
-                  
-                  
-
-        data[date1.strftime('%Y-%m-%d %H:%M:%S')] = {
-            'temperature': T_func(date1, prec1),
-            'humidite': H_func(date1, prec2),
-            'presence': random.randint(0,1)
-                      
-                    
-        }
-
-        date1 += delta
-
-      return data 
-
-'''
 ### debut generer json sur views
 from random import randint
 
@@ -3169,77 +3354,9 @@ import os
 from datetime import datetime, timedelta
 from random import uniform, randint
 from django.utils.timezone import now  # Assuming you're using Django's timezone utilities
-""" 
-iciiiiiiiiiiiiiiii
-def generateJSON(minT, maxT, minH, maxH):
-    data = {}
-    date1 =datetime(2024,5,21,21,59,00)
-    date2 = datetime(2024, 6, 30, 23, 59, 0)
-    delta = timedelta(minutes=1)
-
-    while date1 <= date2:
-        data[date1.strftime('%Y-%m-%d %H:%M:%S')] = {
-            'temperature': round(uniform(minT, maxT), 2),
-            'humidite': round(uniform(minH, maxH), 2),
-            'presence': randint(0, 1)
-        }
-        date1 += delta
-
-    return data
-iciiiiiiiiii
-zones = Zone.objects.all()
-for zone in zones:
-    print(f"Processing Zone: {zone}")
-    minT = zone.minT
-    maxT = zone.maxT
-    minH = zone.minH
-    maxH = zone.maxH
-
-    # Log to ensure values are correct
-    print(f"Generating data for Zone {zone.id}: minT={minT}, maxT={maxT}, minH={minH}, maxH={maxH}")
-
-    # Generate the random data
-    donnees_aleatoires = generateJSON(minT, maxT, minH, maxH)
-    
-    # Convert the data to JSON format
-    json_data = json.dumps(donnees_aleatoires, indent=2)
-
-    # Define the file path in the media folder
-    chemin_fichier = os.path.join('media', f'donnees{zone.id}.json')
-
-    # Write the JSON data to the file
-    with open(chemin_fichier, 'w') as fichier:
-        fichier.write(json_data)
-
-    print(f"Data for Zone {zone.id} written to {chemin_fichier}")
 
 
- 
-   """
 
-      
-
-""" zones = Zone.objects.all()
-for zone in zones:
-    print(zone)
-    minT = zone.minT
-    maxT = zone.maxT
-    maxH = zone.maxH
-    minH = zone.minH
-    # Générer les données aléatoires avec la valeur minT de la zone actuelle
-    donnees_aleatoires = generateJSON(minT,maxT,minH,maxH)
-    
-    # Convertir les données en format JSON
-    json_data = json.dumps(donnees_aleatoires, indent=2)
-
-    # Définir le chemin du fichier dans le dossier media
-    chemin_fichier = os.path.join('media', 'donnees' + str(zone.id) + '.json')
-
-    # Écrire les données JSON dans le fichier
-    with open(chemin_fichier, 'w') as fichier:
-        fichier.write(json_data)
-
- """
 
 ### fin generer json sur views
 """ for i in range(52,53):
@@ -3286,13 +3403,13 @@ for zone in zones:
  """
 
 
- 
+
 def get_json(request):
     # Chemin du fichier JSON
     nom_fichier_json = request.GET.get('nom_fichier')
     date_recherchee = request.GET.get('date')
     chemin_fichier = os.path.join('media', 'donnees'+str(nom_fichier_json)+'.json')
-    #print('*************** date ',date_recherchee)
+    ##print('*************** date ',date_recherchee)
     # Vérifier si le fichier existe
     if os.path.exists(chemin_fichier):
         # Lire le contenu du fichier JSON
@@ -3315,7 +3432,7 @@ def get_json(request):
 # Une fois que les données ont été écrites dans le fichier, vous pouvez accéder à ce fichier en utilisant le chemin chemin_fichier
 
 
-""" 
+"""
 def genererCsvLocal():
     # Charger le fichier CSV en tant que DataFrame
     zones = Zone.objects.all()
@@ -3333,9 +3450,9 @@ class get_alerte_by_id(APIView):
         try:
             user_Id = request.GET.get('id')
             alertes = Alerte.objects.filter(userID=user_Id)
-        
+
             serializer = AlerteSerializer(alertes, many=True)
-       
+
             return Response(serializer.data)
         except Alerte.DoesNotExist:
         # Si la zone spécifiée n'existe pas, retourner une erreur 404
@@ -3344,11 +3461,11 @@ class get_alerte_by_id(APIView):
 class get_alerte_sans_id(APIView):
     def get(self, request):
         try:
-            
+
             alertes = Alerte.objects.filter(userID=None)
-        
+
             serializer = AlerteSerializer(alertes, many=True)
-       
+
             return Response(serializer.data)
         except Alerte.DoesNotExist:
         # Si la zone spécifiée n'existe pas, retourner une erreur 404
@@ -3370,58 +3487,58 @@ class add_user_alerte(APIView):
         try:
             user_id = request.data.get('idUser')
             alerte_id = request.data.get('idAlerte')
-            
+
             # Assurez-vous que l'utilisateur et l'alerte existent
             user = User.objects.get(id=user_id)
             alerte = Alerte.objects.get(id=alerte_id)
-            
+
             # Associez l'utilisateur à l'alerte
             alerte.userID = user
             alerte.save()
-            
+
             return Response(status=status.HTTP_200_OK)
-        
+
         except User.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND, data={'message': 'User not found'})
-        
+
         except Alerte.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND, data={'message': 'Alerte not found'})
 class notifier_alerte(APIView):
     def post(self, request):
         try:
-          
+
             alerte_id = request.data.get('alerteId')
-            
+
             # Assurez-vous que l'utilisateur et l'alerte existent
-         
+
             alerte = Alerte.objects.get(id=alerte_id)
-            
+
             # Associez l'utilisateur à l'alerte
             alerte.notifie = True
             alerte.save()
-            
+
             return Response(status=status.HTTP_200_OK)
-        
+
         except User.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND, data={'message': 'User not found'})
-        
+
         except Alerte.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND, data={'message': 'Alerte not found'})
 
 def get_TH_par_heure(request):
     global is_get_TH_par_heure_running
-    
+
     # Vérifier si la méthode doit continuer à s'exécuter
     if not is_get_TH_par_heure_running:
         return JsonResponse({'message': 'Méthode arrêtée'}, status=200)
-    
+
     # Chemin du fichier JSON
-    #print(' *****************nom_fichier ',request.GET.get('nom_fichier'), ' date ',request.GET.get('date'))
-    
+    ##print(' *****************nom_fichier ',request.GET.get('nom_fichier'), ' date ',request.GET.get('date'))
+
     nom_fichier_json = request.GET.get('nom_fichier')
     date_recherchee = request.GET.get('date')
     chemin_fichier = os.path.join('media', 'donnees'+str(nom_fichier_json)+'.json')
-    #print('*************** date ',date_recherchee)
+    ##print('*************** date ',date_recherchee)
     # Vérifier si le fichier existe
     if os.path.exists(chemin_fichier):
         # Lire le contenu du fichier JSON
@@ -3436,7 +3553,7 @@ def get_TH_par_heure(request):
         while not '60' in date_recherchee : # Format: 'YYYY-MM-DD HH:MM:SS'
           data["T"] = data["T"]+contenu_json.get(date_recherchee, None)["temperature"]
           data["H"] = data["H"]+contenu_json.get(date_recherchee, None)["humidite"]
-          
+
           if(contenu_json.get(date_recherchee, None)):
             i=i+1
             if(int(date_recherchee.split(' ')[1].split(':')[1])+1 <10):
@@ -3457,11 +3574,11 @@ from datetime import datetime, timedelta
 
 def get_TH_par_jour(request):
     global is_get_TH_par_jour_running
-    
+
     # Vérifier si la méthode doit continuer à s'exécuter
     if not is_get_TH_par_jour_running:
         return JsonResponse({'message': 'Méthode arrêtée'}, status=200)
-    
+
     nom_fichier_json = request.GET.get('nom_fichier')
     date_recherchee = request.GET.get('date')
     chemin_fichier = os.path.join('media', 'donnees' + str(nom_fichier_json) + '.json')
@@ -3498,11 +3615,11 @@ def get_TH_par_jour(request):
 
 def get_TH_par_instant(request):
     global is_get_TH_par_instant_running
-    
+
     # Vérifier si la méthode doit continuer à s'exécuter
     if not is_get_TH_par_instant_running:
         return JsonResponse({'message': 'Méthode arrêtée'}, status=200)
-    
+
     nom_fichier_json = request.GET.get('nom_fichier')
     date_recherchee = request.GET.get('date')
     chemin_fichier = os.path.join('media', 'donnees' + str(nom_fichier_json) + '.json')
@@ -3519,6 +3636,7 @@ def get_TH_par_instant(request):
         if date_recherchee in contenu_json:
             data["T"] = contenu_json[date_recherchee]["temperature"]
             data["H"] = contenu_json[date_recherchee]["humidite"]
+            data["P"] = contenu_json[date_recherchee]["presence"]
             return JsonResponse(data)
         else:
             return JsonResponse({'message': 'Aucune donnée trouvée pour cet instant'}, status=404)
@@ -3544,7 +3662,7 @@ class GetAlerteNonNotifie(APIView):
        try:
         userId = request.GET.get('userID')
         role = ProfileUser.objects.get(userId=userId).role
-        print("role ",role)
+        #print("role ",role)
         if role == 'Responsable de maintenance':
             alertes = Alerte.objects.filter(userID=userId, notifie=False)
         else:
@@ -3555,7 +3673,7 @@ class GetAlerteNonNotifie(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-        
+
 @api_view(['GET'])
 def getTenAlertes(request):
     try:
@@ -3564,20 +3682,20 @@ def getTenAlertes(request):
         return Response(serializer.data)
     except Alerte.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
-    
+
 
 """ def setAlertesText() :
   try:
     alertes = Alerte.objects.all()
     for alerte in alertes :
-        print(alerte.id)
+        #print(alerte.id)
         if alerte.type == 'temperature' :
           alerte.text = alerte.localId.nomLocal + ' enregistre une température moyenne inhabituelle'
         elif alerte.type == 'humidite':
           alerte.text = alerte.localId.nomLocal + ' enregistre une humidité moyenne inhabituelle'
         elif alerte.type == 'maintenance':
           text = 'Vous avez une tâche de maintenance dans '+ alerte.localId.nomLocal ;
-        alerte.save() 
+        alerte.save()
   except Alerte.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
@@ -3589,7 +3707,7 @@ from rest_framework.response import Response
 
 class initialData(APIView):
     def get(self, request):
-        
+
         initialdata = [
             { 'name': 'critique', 'data': [1, 1, 1, 1, 1, 1] },
             { 'name': 'non critique', 'data': [2, 3, 5, 7, 6, 3] },
@@ -3600,11 +3718,11 @@ class initialData(APIView):
             formatted_data += "  { name: '" + item['name'] + "', data: " + str(item['data']) + " },\n"
         formatted_data += "];"
         return Response(formatted_data)
-        
+
 """ def createClims():
 
   for zone in Zone.objects.all():
-      print('zone: ', zone.id)
+      #print('zone: ', zone.id)
       equipment_name = f"Climatiseur {zone.id}"
       Equipement.objects.create(
           nom=equipment_name,
@@ -3614,12 +3732,12 @@ class initialData(APIView):
           puissance=1000,
           zoneE=zone
       )
-createClims() 
+createClims()
 
 def createChauffages():
 
   for zone in Zone.objects.all():
-      print('zone: ', zone.id)
+      #print('zone: ', zone.id)
       equipment_name = f"Chauffage {zone.id}"
       Equipement.objects.create(
           nom=equipment_name,
@@ -3629,11 +3747,11 @@ def createChauffages():
           puissance=1000,
           zoneE=zone
       )
-createChauffages()  
+createChauffages()
 def createDishumid():
 
   for zone in Zone.objects.all():
-      print('zone: ', zone.id)
+      #print('zone: ', zone.id)
       equipment_name = f"Déshumidificateur {zone.id}"
       Equipement.objects.create(
           nom=equipment_name,
@@ -3643,11 +3761,11 @@ def createDishumid():
           puissance=500,
           zoneE=zone
       )
-createDishumid() 
+createDishumid()
 def createLits():
 
   for zone in Zone.objects.all():
-      print('zone: ', zone.id)
+      #print('zone: ', zone.id)
       if zone.nomLocal == "Salle de Consultation de Cardiologie" or zone.nomLocal == "Salle de Tests Cardiaques" or zone.nomLocal == "Salle de Consultation de Gynécologie" or zone.nomLocal == "Salle de Préparation à l'Accouchement" or zone.nomLocal == "Salle de consultations spécialisées" or zone.nomLocal == "Unité de soins pédiatriques d’urgences" or zone.nomLocal == "Unité de soins de longue durée d’urgence" or zone.nomLocal == "Salle d'Électroencéphalographie (EEG)" or zone.nomLocal == "Salle de Radiographie" :
         equipment_name = f"Lit Electrique {zone.id}"
         Equipement.objects.create(
@@ -3658,11 +3776,11 @@ def createLits():
             puissance=1200,
             zoneE=zone
         )
-createLits()  
+createLits()
 def createPrises():
 
   for zone in Zone.objects.all():
-      print('zone: ', zone.id)
+      #print('zone: ', zone.id)
       equipment_name = f"Prise à usage personnel 1 {zone.id}"
       Equipement.objects.create(
           nom=equipment_name,
@@ -3672,13 +3790,13 @@ def createPrises():
           puissance=36,
           zoneE=zone
       )
-createPrises() 
+createPrises()
 
 
 def createLeds():
 
   for zone in Zone.objects.all():
-      print('zone: ', zone.id)
+      #print('zone: ', zone.id)
       equipment_name = f"Panneau Led {zone.id}"
       Equipement.objects.create(
           nom=equipment_name,
@@ -3693,7 +3811,7 @@ createLeds()  """
 """ def createLits():
 
   for zone in Zone.objects.all():
-      print('zone: ', zone.id)
+      #print('zone: ', zone.id)
       if zone.nomLocal == "Salle de Consultation de Cardiologie" or zone.nomLocal == "Salle de Radiographie Cardiaque" or zone.nomLocal == "Salle d'urgences" or zone.nomLocal == "Unité de soins intensifs d’urgences" or zone.nomLocal == "Salle de consultation" :
         equipment_name = f"Lit Electrique {zone.id}"
         Equipement.objects.create(
@@ -3715,7 +3833,7 @@ class activer_batiment(APIView):
   def post(self, request, *args, **kwargs):
       data = request.data
       param1 = data.get('batimentId')
-        
+
       try:
             # Désactiver le bâtiment
             batiment = Batiment.objects.get(id=param1)
@@ -3738,12 +3856,12 @@ class activer_batiment(APIView):
                     equipements = Equipement.objects.filter(zoneE=zone.id)
 
                     for equipement in equipements:
-                        print(equipement,equipement.nom)
+                        #print(equipement,equipement.nom)
                         # Supprimer toutes les périodes d'activité de l'équipement
-                        
+
                        # Utiliser la date et l'heure courantes
                         current_datetime = timezone.now()
-                        print("date",current_datetime)
+                        #print("date",current_datetime)
                         # Générer un nombre aléatoire de périodes d'activité pour l'équipement pour la date courante
                         num_activites = random.randint(1, 3)
 
@@ -3766,7 +3884,7 @@ class activer_batiment(APIView):
                             consommation = duree * puissance
 
                             # Afficher les détails pour le débogage
-                            print("temps debut:", debut, "temps fin:", fin, "consommation:", consommation)
+                            #print("temps debut:", debut, "temps fin:", fin, "consommation:", consommation)
 
                             # Créer une nouvelle période d'activité
                             PeriodeActivite.objects.create(
@@ -3785,14 +3903,14 @@ class activer_batiment(APIView):
       except Exception as e:
             # Log l'exception si nécessaire
             return Response(f'Error: {str(e)}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-   
+
 class desactiver_batiment(APIView):
   def post(self, request, *args, **kwargs):
         data = request.data
         param1 = data.get('batimentId')
         date =data.get('date')
         now = timezone.now
-        print("maintenant", now )
+        #print("maintenant", now )
         #date.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
         try:
             # Désactiver le bâtiment
@@ -3825,7 +3943,7 @@ class desactiver_batiment(APIView):
                             Equipement=equipement,
                             tempsFin__gte=date
                         ).delete()
-                        
+
             return Response('done', status=status.HTTP_200_OK)
 
         except Batiment.DoesNotExist:
@@ -3840,13 +3958,13 @@ class activer_etage(APIView):
   def post(self, request, *args, **kwargs):
       data = request.data
       param1 = data.get('batimentId')
-        
+
       try:
-       
-            
+
+
             etages = Etage.objects.get(id=param1)
 
-            
+
             etages.active=True
             etages.save()
                 # Obtenir toutes les zones de l'étage
@@ -3859,12 +3977,12 @@ class activer_etage(APIView):
                     equipements = Equipement.objects.filter(zoneE=zone.id)
 
                     for equipement in equipements:
-                        print(equipement,equipement.nom)
+                        #print(equipement,equipement.nom)
                         # Supprimer toutes les périodes d'activité de l'équipement
-                        
+
                        # Utiliser la date et l'heure courantes
                         current_datetime = timezone.now()
-                        print("date",current_datetime)
+                        #print("date",current_datetime)
                         # Générer un nombre aléatoire de périodes d'activité pour l'équipement pour la date courante
                         num_activites = random.randint(1, 3)
 
@@ -3887,7 +4005,7 @@ class activer_etage(APIView):
                             consommation = duree * puissance
 
                             # Afficher les détails pour le débogage
-                            print("temps debut:", debut, "temps fin:", fin, "consommation:", consommation)
+                            #print("temps debut:", debut, "temps fin:", fin, "consommation:", consommation)
 
                             # Créer une nouvelle période d'activité
                             PeriodeActivite.objects.create(
@@ -3906,23 +4024,23 @@ class activer_etage(APIView):
       except Exception as e:
             # Log l'exception si nécessaire
             return Response(f'Error: {str(e)}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-   
+
 class desactiver_etage(APIView):
   def post(self, request, *args, **kwargs):
         data = request.data
         param1 = data.get('batimentId')
         date =data.get('date')
         now = timezone.now
-        print("maintenant", now )
+        #print("maintenant", now )
         #date.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
         try:
             # Désactiver le bâtiment
             etages = Etage.objects.get(id=param1)
 
-            
+
             etages.active=False
             etages.save()
-            print(etages.active)
+            #print(etages.active)
                 # Obtenir toutes les zones de l'étage
             zones = Zone.objects.filter(etageZ=etages.id)
 
@@ -3943,7 +4061,7 @@ class desactiver_etage(APIView):
                             Equipement=equipement,
                             tempsFin__gte=date
                         ).delete()
-                        
+
             return Response('done', status=status.HTTP_200_OK)
 
         except Batiment.DoesNotExist:
@@ -3959,10 +4077,10 @@ class activer_zone(APIView):
   def post(self, request, *args, **kwargs):
       data = request.data
       param1 = data.get('batimentId')
-        
+
       try:
             # Désactiver le bâtiment
-  
+
                 # Obtenir toutes les zones de l'étage
                     zones = Zone.objects.get(id=param1)
 
@@ -3972,12 +4090,12 @@ class activer_zone(APIView):
                     equipements = Equipement.objects.filter(zoneE=zones.id)
 
                     for equipement in equipements:
-                        print(equipement,equipement.nom)
+                        #print(equipement,equipement.nom)
                         # Supprimer toutes les périodes d'activité de l'équipement
-                        
+
                        # Utiliser la date et l'heure courantes
                         current_datetime = timezone.now()
-                        print("date",current_datetime)
+                        #print("date",current_datetime)
                         # Générer un nombre aléatoire de périodes d'activité pour l'équipement pour la date courante
                         num_activites = random.randint(1, 3)
 
@@ -4000,7 +4118,7 @@ class activer_zone(APIView):
                             consommation = duree * puissance
 
                             # Afficher les détails pour le débogage
-                            print("temps debut:", debut, "temps fin:", fin, "consommation:", consommation)
+                            #print("temps debut:", debut, "temps fin:", fin, "consommation:", consommation)
 
                             # Créer une nouvelle période d'activité
                             PeriodeActivite.objects.create(
@@ -4047,9 +4165,9 @@ class supprimer_periode(APIView):
         #date.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
         try:
             # Désactiver le bâtiment
-                   
+
                     # Obtenir tous les équipements de la zone
-            
+
             date = timezone.now()
                     # Obtenir tous les équipements de la zone
             PeriodeActivite.objects.filter(
@@ -4061,7 +4179,7 @@ class supprimer_periode(APIView):
                             Equipement=equipement,
                             tempsFin__gte=date
                         ).delete()
-                      
+
             return Response('done', status=status.HTTP_200_OK)
 
         except Batiment.DoesNotExist:
@@ -4082,7 +4200,7 @@ class desactiver_zone(APIView):
         param1 = data.get('batimentId')
         date =data.get('date')
         now = timezone.now
-        print("maintenant", now )
+        #print("maintenant", now )
         #date.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
         try:
             # Désactiver le bâtiment
@@ -4103,7 +4221,7 @@ class desactiver_zone(APIView):
                             Equipement=equipement,
                             tempsFin__gte=date
                         ).delete()
-                        
+
                     return Response('done', status=status.HTTP_200_OK)
 
         except Batiment.DoesNotExist:
@@ -4112,14 +4230,86 @@ class desactiver_zone(APIView):
         except Exception as e:
             # Log l'exception si nécessaire
             return Response(f'Error: {str(e)}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+################################ generer data pour equipmenet #######################################
+""" import random
+# l zeineeeb :
+def generate_values(puissance, n=60, variance=1.0):
+    # Calculer la valeur moyenne approximative
+    avg_value = puissance / n
+
+    # Générer n valeurs aléatoires autour de la valeur moyenne
+    values = [random.gauss(avg_value, variance) for _ in range(n)]
+
+    # Ajuster les valeurs pour que leur somme soit exactement puissance
+    current_sum = sum(values)
+    correction_factor = puissance / current_sum
+    values = [v * correction_factor for v in values]
+
+    return values
+
+# l zeineeeb :
+import numpy as np
+
+i=0
+equipements = Equipement.objects.all()
+for equipement in equipements :
+  donnees_historique = generate_values(equipement.puissance)
+  # Calcul de la moyenne (μ) et de l'écart type (σ)
+  moyenne = np.mean(donnees_historique)
+  ecart_type = np.std(donnees_historique)
+
+  # Définition des seuils
+  seuil_superieur = moyenne + 2 * ecart_type
+  seuil_inferieur = moyenne - 2 * ecart_type
+  if seuil_inferieur <= 0:
+     seuil_inferieur = moyenne
+  equipement.minC = seuil_inferieur
+  equipement.maxC = seuil_superieur
+  equipement.save()
+
+
+def generateDataEquipements(eq):
+  data = {}
+  # Définir la période de temps
+  date1 = datetime(2024, 6, 15, 0, 0, 0)
+  date2 = datetime(2024, 7, 15, 0, 0, 0)
+  delta = timedelta(minutes=1)
+
+  # Calcul de la différence en minutes
+  diff = date2 - date1
+  diff_minutes = diff.total_seconds() / 60
+  c=1
+  while date1 <= date2:
+    data[date1.strftime('%Y-%m-%d %H:%M:%S')] = {
+        'puissance': random.uniform(eq.minC, eq.maxC)
+    }
+    date1 += delta
+  return data
+
+
+def generateEquipementsJSON():
+  equipements=Equipement.objects.all()
+  for equipement in equipements:
+    donnees = generateDataEquipements(equipement)
+    json_data = json.dumps(donnees, indent=2)
+
+  # Définir le chemin du fichier dans le dossier media
+    chemin_fichier = os.path.join('media', 'puissances' + str(equipement.id) + '.json')
+
+  # Écrire les données JSON dans le fichier
+    with open(chemin_fichier, 'w') as fichier:
+      fichier.write(json_data)
+#generateJSONALL()
+
+generateEquipementsJSON() """
 ############################## prediction etape1: extraction données###################################
 import pandas as pd
 import os
 from datetime import datetime
 from django.conf import settings
-from.models import PeriodeActivite  # Remplacez 'myapp' par le nom de votre application
+from.models import PeriodeActivite
 
-def export_to_csv():
+""" def export_to_csv():
     # Extraction des données de la table PeriodeActivite
     periodes = PeriodeActivite.objects.select_related('Equipement').all()
     data = []
@@ -4131,7 +4321,8 @@ def export_to_csv():
                 'date_fin': periode.tempsFin,
                 'consommation': periode.consommation,
                 'puissance': periode.Equipement.puissance,
-                'type': periode.Equipement.type
+                'type': periode.Equipement.type,
+                'id':periode.Equipement.id
             })
 
     # Conversion des données en DataFrame pandas
@@ -4141,24 +4332,94 @@ def export_to_csv():
     df['duration'] = (df['date_fin'] - df['date_debut']).dt.total_seconds() / 3600
 
     # Enregistrement du DataFrame en fichier CSV
-    csv_file_path = os.path.join('media', 'exported_data_prediction.csv')
-    if os.path.exists(csv_file_path):
-        df.to_csv(csv_file_path, mode='a', header=False, index=False)  # Ajouter sans l'en-tête
-  
-    
+    csv_file_path = os.path.join('media', 'Histo3.csv')
+
+    df.to_csv(csv_file_path, mode='w', header=False, index=False)  # Ajouter sans l'en-tête
+    #print('fichier creer')
+
+
     return csv_file_path
 from django.http import HttpResponse
 
 
 def export_csv_view():
     csv_file_path = export_to_csv()
-    
-           
+
+
 #export_csv_view()
+ """
+
+import pandas as pd
+
+import os
+import pandas as pd
+from datetime import datetime
+from .models import Equipement, PeriodeActivite
+
+def csv_file():
+    try:
+        equipements = Equipement.objects.all()
+        periodes_activite = PeriodeActivite.objects.all()
+
+        data = []
+
+        for equipement in equipements:
+            for mois in range(1, 7):
+                date_debut = datetime.strptime(f'2024-{mois:02d}-01 00:00:00', '%Y-%m-%d %H:%M:%S').replace(tzinfo=None)
+                date_fin = datetime.strptime(f'2024-{mois+1:02d}-01 00:00:00', '%Y-%m-%d %H:%M:%S').replace(tzinfo=None)
+                consommation_totale = 0
+
+                for periode in periodes_activite:
+                    if periode.tempsFin is None:
+                        periode.tempsFin = datetime.now()
+                    temps_debut = periode.tempsDebut.replace(tzinfo=None)
+                    temps_fin = periode.tempsFin.replace(tzinfo=None)
+
+                    if equipement.id == periode.Equipement.id and (
+                        (temps_debut <= date_debut and temps_fin >= date_fin) or
+                        (temps_debut >= date_debut and temps_fin <= date_fin) or
+                        (temps_debut <= date_debut and temps_fin <= date_fin and temps_fin >= date_debut) or
+                        (temps_debut >= date_debut and temps_fin >= date_fin and temps_debut <= date_fin)):
+
+                        if temps_debut == date_debut and temps_fin == date_fin:
+                            consommation_totale += periode.consommation
+                        else:
+                            debut = max(temps_debut.timestamp(), date_debut.timestamp())
+                            fin = min(temps_fin.timestamp(), date_fin.timestamp())
+                            C = periode.Equipement.puissance * (fin - debut) / 3600 / 1000
+                            consommation_totale += C
+
+                data.append({
+                    'année': 2024,
+                    'mois': mois,
+                    'puissance': equipement.puissance,
+                    'type': equipement.type,
+                    'consommation': consommation_totale,
+                })
+
+        # Conversion des données en DataFrame pandas
+        df = pd.DataFrame(data)
+
+        # Vérification du répertoire media
+
+
+        # Enregistrement du DataFrame en fichier CSV
+        csv_file_path = os.path.join('media', 'HistoParMoisOther.csv')
+        df.to_csv(csv_file_path, mode='w', header=False, index=False)  # Ajouter avec l'en-tête
+        #print('Fichier créé:', csv_file_path)
+
+        return csv_file_path
+
+    except Exception as e:
+        #print('Erreur lors de la génération du fichier CSV:', str(e))
+        return None
+
+#csv_file()
 
 ################################ entrainement #############################
 
 import pandas as pd
+from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
@@ -4167,13 +4428,15 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 import joblib
 #Charger les données
-chemin_fichier = os.path.join('media', 'Histo.csv')  # Chemin du fichier CSV
+chemin_fichier = os.path.join('media', 'HistoParMoisOther.csv')  # Chemin du fichier CSV
 df = pd.read_csv(chemin_fichier, delimiter=';')
 
 
 #Prétraiter les données
 date_format = "%d/%m/%Y %H:%M"
-df['date_debut'] = pd.to_datetime(df['date_debut'], format=date_format, dayfirst=True)
+##print(df.columns)
+##print("here ",pd.to_datetime(df['date_debut'], format=date_format, dayfirst=True))
+""" df['date_debut'] = pd.to_datetime(df['date_debut'], format=date_format, dayfirst=True)
 df['date_fin'] = pd.to_datetime(df['date_fin'], format=date_format, dayfirst=True)
 df['duration'] = (df['date_fin'] - df['date_debut']).dt.total_seconds() / 3600
 
@@ -4182,18 +4445,18 @@ df['month'] = df['date_debut'].dt.month
 df['day'] = df['date_debut'].dt.day
 df['hour'] = df['date_debut'].dt.hour
 
+ """
 
+##print(df['date_debut'],df['date_fin'])
 
-#print(df['date_debut'],df['date_fin'])
-
-features = ['year', 'month', 'day', 'hour', 'duration', 'puissance', 'type']
+features = ['annee', 'mois',   'puissance', 'type']
 X = df[features]
 y = df['consommation']
 
 # Convertir les caractéristiques catégorielles en variables numériques
 X = pd.get_dummies(X, columns=['type'])
 
-#print(X.columns)
+##print(X.columns)
 
 # Diviser les données
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -4202,23 +4465,26 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 # Entraîner le modèle
 model = LinearRegression()
+#model = DecisionTreeRegressor()
 model.fit(X_train, y_train)
 
 
-#print(X_train.columns)
+
+
+##print(X_train.columns)
 
 
 # Évaluer le modèle
 y_pred = model.predict(X_test)
 mse = mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
-joblib.dump(model, 'linear_regression_model_energy.pkl')
+joblib.dump(model, 'Decision_regression_model_energy_correct_mois_soutenance.pkl')
 
 
-""" 
-print(f'Erreur quadratique moyenne (MSE) : {mse}')
-print(f'Coefficient de détermination (R^2) : {r2}')
 
+#print(f'Erreur quadratique moyenne (MSE) : {mse}')
+#print(f'Coefficient de détermination (R^2) : {r2}')
+"""
 # Exemple de prédiction
 nouvelle_donnee = pd.DataFrame({
     'year': [2025],
@@ -4237,11 +4503,11 @@ nouvelle_donnee = pd.DataFrame({
     'type_Prises a  usage personnel': [0],
     'type_Réfrigérateurs et Congélateurs': [0],
     'type_équipements de Confort et de Divertissement': [0]
-    
+
 })
- 
+
 prediction = model.predict(nouvelle_donnee)
-print(f'Prédiction de consommation : {prediction[0]}')
+#print(f'Prédiction de consommation : {prediction[0]}')
  """
 # Étape 6 : Faire des prédictions futures
 # Exemple de prédiction
@@ -4259,7 +4525,7 @@ nouvelle_donnee = pd.DataFrame({
     'type_Equipements médicaux': [0]
 })
 prediction = model.predict(nouvelle_donnee)
-print(f'Prédiction de consommation : {prediction[0]}') '''
+#print(f'Prédiction de consommation : {prediction[0]}') '''
 ################################### implementation de la methode prediction ######################
 # quickstart/views.py
 import joblib
@@ -4268,7 +4534,7 @@ from django.http import JsonResponse
 from rest_framework.decorators import api_view
 
 # Charger le modèle au démarrage du serveur
-model = joblib.load('linear_regression_model_energy.pkl')
+model = joblib.load('Decision_regression_model_energy_correct_mois_soutenance.pkl')
 
 @api_view(['POST'])
 def predict_consumption(request):
@@ -4280,6 +4546,7 @@ def predict_consumption(request):
         hour = data.get('hour')
         duration = data.get('duration')
         puissance = data.get('puissance')
+
         type_chauffages = data.get('type_Chauffages', 0)
         type_climatiseurs = data.get('type_Climatiseurs', 0)
         type_deshumidificateurs = data.get('type_Déshumidificateurs', 0)
@@ -4292,7 +4559,7 @@ def predict_consumption(request):
         type_confort_divertissement = data.get('type_équipements de Confort et de Divertissement', 0)
 
         # Construire l'entrée pour la prédiction
-        input_features = np.array([[year, month, day, hour, duration, puissance, type_chauffages,
+        input_features = np.array([[year, month, day, hour, duration, puissance,type_chauffages,
                                     type_climatiseurs, type_deshumidificateurs, type_eclairage,
                                     type_equipements_bureaux, type_equipements_cuisine, type_equipements_medicaux,
                                     type_prises_personnel, type_refrigerateurs, type_confort_divertissement]])
@@ -4302,7 +4569,7 @@ def predict_consumption(request):
 
 # Faire une prédiction
         prediction = model.predict(input_features_df)
-        #print(prediction)
+        ##print(prediction)
 
 
         return JsonResponse({'predicted_consumption': prediction[0]})
@@ -4310,10 +4577,10 @@ def predict_consumption(request):
         return JsonResponse({'error': str(e)}, status=400)
 
 ################################# methode prediction par mois ########################
-def predict_consumption_equipement(year, month, day, hour, duration, puissance, type):
+def predict_consumption_equipement(year, month, puissance, type):
     try:
         # Obtenez les types d'équipement
-        #print(year,month,day,hour,duration,puissance,type)
+        ##print(year,month,day,hour,duration,puissance,type,id)
         type_chauffages = type == 'type_Chauffages'
         type_climatiseurs = type == 'type_Climatiseurs'
         type_deshumidificateurs = type == 'type_Déshumidificateurs'
@@ -4326,7 +4593,7 @@ def predict_consumption_equipement(year, month, day, hour, duration, puissance, 
         type_confort_divertissement = type == 'type_équipements de Confort et de Divertissement'
 
         # Construire l'entrée pour la prédiction
-        input_features = np.array([[year, month, day, hour, duration, puissance, type_chauffages,
+        input_features = np.array([[year, month,  puissance, type_chauffages,
                                     type_climatiseurs, type_deshumidificateurs, type_eclairage,
                                     type_equipements_bureaux, type_equipements_cuisine, type_equipements_medicaux,
                                     type_prises_personnel, type_refrigerateurs, type_confort_divertissement]])
@@ -4336,6 +4603,7 @@ def predict_consumption_equipement(year, month, day, hour, duration, puissance, 
 
         # Faire une prédiction
         prediction = model.predict(input_features_df)
+        #print("consommation d'un equipement",prediction[0])
         return prediction[0]
     except Exception as e:
         return str(e)
@@ -4347,7 +4615,7 @@ from django.http import JsonResponse
 from rest_framework.decorators import api_view
 
 # Charger le modèle au démarrage du serveur
-model = joblib.load('linear_regression_model_energy.pkl')
+model = joblib.load('Decision_regression_model_energy_correct_mois_soutenance.pkl')
 
 @api_view(['POST'])
 def predict_consumption_mois(request):
@@ -4355,6 +4623,7 @@ def predict_consumption_mois(request):
         data = request.data
         year = data.get('year')
         month = data.get('month')
+
         #print('year',year,'month',month)
         equipementsCri = Equipement.objects.filter(categorie='critique')
         equipementsNor = Equipement.objects.filter(categorie='normal')
@@ -4363,15 +4632,84 @@ def predict_consumption_mois(request):
         for equipement in equipementsCri:
             #print(equipement.id)
             # Prédire la consommation pour chaque équipement
-            consommationCri += predict_consumption_equipement(year, month, 1,1, 720, equipement.puissance, equipement.type)
-            #print('consommation',consommationCri)
+            consommationCri += predict_consumption_equipement(2024, month,  equipement.puissance, equipement.type)
+            #print('\nconsommation  critique total',consommationCri)
+        #print('\nconsommation  critique total fin',consommationCri)
         for equipement in equipementsNor:
+            ##print(equipement.id)
+            # Prédire la consommation pour chaque équipement
+            consommationNor += predict_consumption_equipement(2024, month,  equipement.puissance, equipement.type)
+            #print('\nconsommation non critique toTAL',consommationNor)
+        #print('\nconsommation  non critique total fin',consommationCri)
+        return JsonResponse({'predicted_consumption': consommationCri, 'predicted_consumption2': consommationNor})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+def predict_consumption_mois_backend(mois):
+    try:
+        year = 2024
+        month = mois
+
+        equipementsCri = Equipement.objects.filter(categorie='critique')
+        equipementsNor = Equipement.objects.filter(categorie='normal')
+        consommationCri = 0
+        consommationNor = 0
+        
+        for equipement in equipementsCri:
+            consommationCri += predict_consumption_equipement(2024, month, equipement.puissance, equipement.type)
+        
+        for equipement in equipementsNor:
+            consommationNor += predict_consumption_equipement(2024, month, equipement.puissance, equipement.type)
+        
+        result = {'predicted_consumption': consommationCri, 'predicted_consumption2': consommationNor}
+        print(f"Mois: {mois}, Consommation : {consommationCri+consommationNor}")
+        return result
+    except Exception as e:
+        print(f"Erreur: {str(e)}")
+        return {'error': str(e)}
+
+# Exemple d'utilisation
+predict_consumption_mois_backend(5)
+predict_consumption_mois_backend(6)
+
+@api_view(['POST'])
+def predict_consumption_mois_local(request):
+    try:
+        data = request.data
+        zone = data.get('zoneId')
+        year =2024
+        month = 8
+        ##print('zone',int(zone))
+        equipementsCri = Equipement.objects.filter(zoneE=zone)
+
+        consommationCri = 0
+        ##print(equipementsCri)
+        for equipement in equipementsCri:
             #print(equipement.id)
             # Prédire la consommation pour chaque équipement
-            consommationNor += predict_consumption_equipement(year, month, 1,1, 720, equipement.puissance, equipement.type)
-            #print('consommation',consommationNor)
-    
-        return JsonResponse({'predicted_consumption': consommationCri, 'predicted_consumption2': consommationNor})
+            consommationCri += predict_consumption_equipement(year, month, equipement.puissance, equipement.type)
+            ##print('consommation',consommationCri)
+        ##print("iciiiiii consommation",consommationCri)
+        return JsonResponse({'predicted_consumption': consommationCri})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+@api_view(['POST'])
+def predict_consumption_mois_equipement(request):
+    try:
+        data = request.data
+        equiId = data.get('equipementId')
+        year =2024
+        month = 7
+        ##print('year',year,'month',month)
+        equipement = Equipement.objects.get(id=equiId)
+
+        consommationCri = 0
+
+            ##print(equipement.id)
+            # Prédire la consommation pour chaque équipement
+        consommationCri = predict_consumption_equipement(year, month, equipement.puissance, equipement.type)
+            ##print('consommation',consommationCri)
+
+        return JsonResponse({'predicted_consumption': consommationCri})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
@@ -4398,6 +4736,7 @@ def générerHum(date, prec, minH, maxH):
     j=0
 
   return T
+
 def générerTemp(date, prec, minT, maxT):
 
   if round(random.uniform(0, 1), 0)==1 :
@@ -4431,97 +4770,77 @@ import os
 from datetime import datetime, timedelta
 import random
 
-def generateJSON(minT,maxT,minH,maxH):
-      data = {}
+def generateJSON(minT,maxT,minH,maxH):  #############" correct##################"
+  data = {}
+  date1 = datetime(2024, 1, 1, 0, 0, 0)
+  date2 = datetime(2024, 7, 5, 0, 0, 0)
+  delta = timedelta(minutes=1)
+  c=1
+  h1 = 0
+  h2 = 0
+  h3 = 0
+  h4 = 0
+  h5 = 0
+  while date1 <= date2:
+    if(c==1):
+      prec1=22
+      prec2=40
+      prec3=-1
+      c=c+1
 
-      # Définir la période de temps
-      date1 = datetime(2023, 7,1, 1, 0, 0, 0)
-      date2 = datetime(2023, 12, 31, 23, 59, 0)
-      delta = timedelta(minutes=1)
+    if date1.hour == 0 and date1.minute == 0:
+      ##print('date: ', date1)
+      h1 = random.randint(6, 19)
 
-      c=1
-      # Générer des données pour chaque jour
-       # Utilisez request.data pour récupérer les données du corps de la requête
-     
-      param2 = minT
-      
-      
+      h2 = h1
+      while h2 == h1 or h2 == h1+1 :
+        h2 = random.randint(6, 19)
 
-      while date1 <= date2:
-        if(c==1):
-          prec1=22
-          prec2=40
-          c=c+1
+      h3 = h2
+      while h3 == h1 or h3 == h1+1 or h3 == h2  :
+        h3 = random.randint(6, 19)
 
-        prec1 = float(générerTemp(date1, prec1,minT,maxT))
-        prec2 = float(générerHum(date1,prec2,minH,maxH))
-                  
-                  
+      h4 = h3
+      while h4 == h1 or h4 == h1+1 or h4 == h2 or h4 == h3 or h4 == h3+1:
+        h4 = random.randint(6, 19)
 
-        data[date1.strftime('%Y-%m-%d %H:%M:%S')] = {
-            'temperature': générerTemp(date1, prec1,minT,maxT),
-            'humidite': générerHum(date1, prec2,minH,maxH),
-            'presence': random.randint(0,1)
-                      
-                    
-        }
+      h5 = h3
+      while h5 == h1 or h5 == h1+1 or h5 == h2 or h5 == h3 or h5 == h3+1 or h5 == h4 or h5 == h4+1:
+        h5 = random.randint(6, 19)
 
-        date1 += delta
+    prec1 = float(générerTemp(date1, prec1,minT,maxT))
+    prec2 = float(générerHum(date1,prec2,minH,maxH))
+    prec3 = générerP2(date1, h1, h2, h3, h4, h5)
 
-      return data
+    data[date1.strftime('%Y-%m-%d %H:%M:%S')] = {
+        'temperature': générerTemp(date1, prec1,minT,maxT),
+        'humidite': générerHum(date1, prec2,minH,maxH),
+        'presence': prec3
+    }
+    date1 += delta
+  return data
+
 def generateJSONALL(id):
 
-      zone=Zone.objects.get(id=id)
-      
-      donnees_aleatoires = generateJSON(zone.minT,zone.maxT,zone.minH,zone.maxH)
-      json_data = json.dumps(donnees_aleatoires, indent=2)
+  zone=Zone.objects.get(id=id)
 
-      # Définir le chemin du fichier dans le dossier media
-      chemin_fichier = os.path.join('media', 'prediction' + str(zone.id) + '.json')
+  donnees_aleatoires = generateJSON(zone.minT,zone.maxT,zone.minH,zone.maxH)
+  json_data = json.dumps(donnees_aleatoires, indent=2)
 
-      # Écrire les données JSON dans le fichier
-      with open(chemin_fichier, 'w') as fichier:
-          fichier.write(json_data)
+  # Définir le chemin du fichier dans le dossier media
+  chemin_fichier = os.path.join('media', 'donnees' + str(zone.id) + '.json')
 
-""" zones = Zone.objects.all()
-for z in zones:
+  # Écrire les données JSON dans le fichier
+  with open(chemin_fichier, 'w') as fichier:
+      fichier.write(json_data)
+
+zones = Zone.objects.all()
+""" for z in zones:
   generateJSONALL(z.id)
  """
-#################### copier json to json
 
-""" def generateJSONALL(id):
-    prec = 40
-    data_new = {}
-    data={}
-    zone = Zone.objects.get(id=id)
-    chemin_fichier = os.path.join('media', f'donnees{zone.id}.json')
-    if os.path.exists(chemin_fichier):
-        with open(chemin_fichier, 'r') as fichier:
-            data = json.load(fichier)
-       
-            for timestamp, values in data.items():
-                temperature = values['temperature']
-                print("before",values['humidite'])
-              
-                # Ajoutez ici la logique pour vérifier la température et l'humidité et contrôler le chauffage/climatisation
-                #print('--------------------la temperature :  ', temperature, 'maxT :  ', equi.zoneE.maxT)
-                data_new[timestamp] = {
-                    'temperature': temperature,
-                    'humidite': générerHum(timestamp, prec, zone.minH, zone.maxH),
-                    'presence': random.randint(0,1)
-                              
-                            
-                }
-                print("after",data_new[timestamp]['humidite'])
 
-        chemin_fichier = os.path.join('media', f'solution{zone.id}.json')
-        with open(chemin_fichier, 'w') as fichier:
-            json.dump(data_new, fichier, indent=4)
-    else:
-        print(f"Le fichier de données pour la zone {zone.id} n'existe pas.")
-Zones= Zone.objects.all()
-for z in Zones:
-  generateJSONALL(z.id) """
+
 
 
 
@@ -4560,7 +4879,7 @@ for equipement in equipements :
     presences[equipement.zoneE.id] = [entry['presence'] for entry in limited_data]
 
 """ for key, value in temperatures.items():
-   print('key ', key) """
+   #print('key ', key) """
 
 climatiseurs = Equipement.objects.filter(type='Climatiseurs').order_by('zoneE')
 chauffages = Equipement.objects.filter(type='Chauffages').order_by('zoneE')
@@ -4583,7 +4902,7 @@ import numpy as np
 # algo naif:
 MINUTES = 22320
 
-print()
+#print()
 equipements = Equipement.objects.all().order_by('zoneE')
 
 climatiseurs = Equipement.objects.filter(type='Climatiseurs').order_by('zoneE')
@@ -4607,23 +4926,23 @@ autres = Equipement.objects.exclude(id__in=selected_equipment_ids).order_by('zon
 
 
 # ********************************* Ajouter le reste des equipements *********************************
-""" 
+"""
 
 
 def always_on(MINUTES) :
-  print('aa')
+  #print('aa')
   return [1] * MINUTES
 
 def always_off(MINUTES) :
-  print('aa')
+  #print('aa')
   return [0] * MINUTES
 
 def deshum_states(MINUTES) :
-  print('aa')
+  #print('aa')
   return [1] * MINUTES
 
 def journee_on(MINUTES):
-  print('aa')
+  #print('aa')
   states = []
   h=0
   for j in range(8*60):
@@ -4646,7 +4965,7 @@ def journee_on(MINUTES):
   return states
 
 def random_states(MINUTES) :
-  print('aa')
+  #print('aa')
 
   minutes_per_day = 1440
 
@@ -4687,7 +5006,7 @@ def random_states(MINUTES) :
   # Convertir en liste
   return etat.tolist()
 
-print('init ...')
+#print('init ...')
 equipements_etats = {
   "climatiseurs": {C.id: always_on(MINUTES) for C in climatiseurs},
   "chauffages": {C.id: always_off(MINUTES) for C in chauffages},
@@ -4697,10 +5016,10 @@ equipements_etats = {
   "confort": {C.id: journee_on(MINUTES) for C in confort},
   "autres": {C.id: random_states(MINUTES) for C in autres}
 }
-print('fin init ', equipements_etats)
+#print('fin init ', equipements_etats)
 
 def consom_climatiseurs(equipements_etats):
-  print('bb')
+  #print('bb')
   data = equipements_etats["climatiseurs"]
   consommation_totale = 0
   for i, (key, value) in enumerate(data.items()):
@@ -4712,7 +5031,7 @@ def consom_climatiseurs(equipements_etats):
   return consommation_totale
 
 def consom_chauffage(equipements_etats):
-  print('bb')
+  #print('bb')
   data = equipements_etats["chauffages"]
   consommation_totale = 0
   for i, (key, value) in enumerate(data.items()):
@@ -4724,7 +5043,7 @@ def consom_chauffage(equipements_etats):
   return consommation_totale
 
 def consom_deshumidificateur(equipements_etats):
-  print('bb')
+  #print('bb')
   data = equipements_etats["deshumidificateurs"]
   consommation_totale = 0
   for i, (key, value) in enumerate(data.items()):
@@ -4735,7 +5054,7 @@ def consom_deshumidificateur(equipements_etats):
   return consommation_totale
 
 def consom_equipments_always_on(equipements_etats):
-  print('bb')
+  #print('bb')
   data = equipements_etats["equipments_always_on"]
   consommation_totale = 0
   for i, (key, value) in enumerate(data.items()):
@@ -4747,20 +5066,20 @@ def consom_equipments_always_on(equipements_etats):
   return consommation_totale
 
 def consom_eclairage(equipements_etats):
-  print('bb')
+  #print('bb')
   data = equipements_etats["eclairage"]
   consommation_totale = 0
   for i, (key, value) in enumerate(data.items()):
     states = value
     if i==0:
-      print('count: ', states[:1000])
+      #print('count: ', states[:1000])
     equipement = Equipement.objects.get(id=key)
     consommation_totale += states.count(1) / 60 * equipement.puissance
 
   return consommation_totale
 
 def consom_confort(equipements_etats):
-  print('bb')
+  #print('bb')
   data = equipements_etats["confort"]
   consommation_totale = 0
   for i, (key, value) in enumerate(data.items()):
@@ -4771,14 +5090,14 @@ def consom_confort(equipements_etats):
   return consommation_totale
 
 n = consom_climatiseurs(equipements_etats) + consom_chauffage(equipements_etats) + consom_deshumidificateur(equipements_etats) + consom_equipments_always_on(equipements_etats) + consom_eclairage(equipements_etats) + consom_confort(equipements_etats)
-print('n = ', n)
+#print('n = ', n)
  """
 
 
 def HopitalConsommationPendantMoisTa3i(date_debut,date_fin):
-    
+
         try:
-            
+
 
             equipements = Equipement.objects.all()
             consommation = 0
@@ -4789,9 +5108,9 @@ def HopitalConsommationPendantMoisTa3i(date_debut,date_fin):
             return consommation
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-""" print("juin",HopitalConsommationPendantMoisTa3i("2024-06-01 01:00:00","2024-06-30 23:59:00"))
+print("juin",HopitalConsommationPendantMoisTa3i("2024-06-01 01:00:00","2024-06-30 23:59:00"))
 print("mai",HopitalConsommationPendantMoisTa3i("2024-05-01 01:00:00","2024-05-31 23:59:00"))
-print("avril",HopitalConsommationPendantMoisTa3i("2024-04-01 01:00:00","2024-04-30 23:59:00"))
-print("mars",HopitalConsommationPendantMoisTa3i("2024-03-01 01:00:00","2024-03-31 23:59:00"))
-print("fevrier",HopitalConsommationPendantMoisTa3i("2024-02-01 01:00:00","2024-02-29 23:59:00"))
-print("janvier",HopitalConsommationPendantMoisTa3i("2024-01-01 01:00:00","2024-01-31 23:59:00"))  """
+"""#print("avril",HopitalConsommationPendantMoisTa3i("2024-04-01 01:00:00","2024-04-30 23:59:00"))
+#print("mars",HopitalConsommationPendantMoisTa3i("2024-03-01 01:00:00","2024-03-31 23:59:00"))
+#print("fevrier",HopitalConsommationPendantMoisTa3i("2024-02-01 01:00:00","2024-02-29 23:59:00"))
+#print("janvier",HopitalConsommationPendantMoisTa3i("2024-01-01 01:00:00","2024-01-31 23:59:00"))  """

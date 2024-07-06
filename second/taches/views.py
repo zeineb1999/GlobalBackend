@@ -267,6 +267,7 @@ class AlertConsumer(WebsocketConsumer):
     if self.is_running:
             #print('send_data running')
       self.check_conditions_and_create_alerts()
+     
       Timer(60, self.send_data).start()
   def check_conditions_and_create_alerts(self):
         print('check_conditions_and_create_alerts chaque minute')
@@ -283,31 +284,74 @@ class AlertConsumer(WebsocketConsumer):
                     temperature = contenu_json[date_recherchee]["temperature"]
                     humidite = contenu_json[date_recherchee]["humidite"]
                     print("local", local.id,"temperature",temperature,"humidité",humidite,"date", date_recherchee)
-                    if temperature < local.minT or temperature > local.maxT :
-                        print('cas temperature : ', temperature, 'local : ', local)
-                        self.create_alert(local, temperature, "temperature")
-                    if humidite < local.minH or humidite > local.maxH:
-                        print('cas humidite : ', humidite, 'local : ', local)
-                        self.create_alert(local,humidite, "humidite" )
-
-  def create_alert(self, local, temperature, type):
-        if type == "temperature":
+                    if temperature < local.minT :
+                      self.create_alert(local, temperature, "temperatureInf","")
+                    if temperature > local.maxT :
+                      print('cas temperature : ', temperature, 'local : ', local)
+                      self.create_alert(local, temperature, "temperatureSup","")
+                    if humidite < local.minH or humidite > local.maxH :
+                      self.create_alert(local,humidite, "humidite","" )
+        """ equipements = Equipement.objects.filter()
+        #print('locaux : ', Batiment.objects.all())
+        date_recherchee = datetime.now().strftime('%Y-%m-%d %H:%M:00')
+        for local in equipements:
+            nom_fichier_json = f"{local.id}"
+            chemin_fichier = os.path.join('media', 'puissances' + str(nom_fichier_json) + '.json')
+            if os.path.exists(chemin_fichier):
+                with open(chemin_fichier, 'r') as fichier:
+                    contenu_json = json.load(fichier)
+                if date_recherchee in contenu_json:
+                    puissance = contenu_json[date_recherchee]["puissance"]
+                    print("puissance",puissance,"equipement",local.id)
+                    if puissance < local.minC or puissance >local.maxC :
+                      self.create_alert(local, puissance, "consommation",local)
+                     """
+             
+  def create_alert(self, local, temperature, type,localV):
+        current_time = datetime.now()
+        new_time = current_time + timedelta(hours=1)    
+        date_recherchee =new_time.strftime('%Y-%m-%d %H:%M:00')
+        if type == "temperatureSup":
+          equipement = Equipement.objects.get(zoneE=local, nom__contains="limatiseur")
           alert = Alerte(
               type='temperature',
-
+              equipementId=equipement,
               localId=local,
-              valeur=temperature,
+              valeur=round(temperature, 2),
+              dateAlerte = date_recherchee ,
+              text=f"Alert! Temperature: {round(temperature, 2)}  out of range."
+          )
+        elif type == "temperatureInf":
+           equipement = Equipement.objects.get(zoneE=local, nom__contains="hauffage")
+           alert = Alerte(
+              type='temperature',
+              equipementId=equipement,
+              localId=local,
+              valeur=round(temperature, 2),
+              dateAlerte = date_recherchee,
               
-              text=f"Alert! Temperature: {temperature}  out of range."
+              text=f"Alert! Temperature: {round(temperature, 2)}   out of range."
           )
         elif type == "humidite":
+          equipement = Equipement.objects.get(zoneE=local, nom__contains="umidificateur")
           alert = Alerte(
               type='humidite',
-
+              equipementId=equipement,
               localId=local,
-              valeur=temperature,
+              valeur=round(temperature, 2),
+              dateAlerte = date_recherchee,
              
-              text=f"Alert! humidité: {temperature}  out of range."
+              text=f"Alert! humidité:{round(temperature, 2)}   out of range."
+          )
+        elif type=="consommation":
+           alert = Alerte(
+              type='consommation',
+              equipementId=local,
+              localId=localV,
+              valeur=round(temperature, 2),
+              dateAlerte = date_recherchee,
+             
+              text=f"Alert! dysfontionnement : {round(temperature, 2)} Kwh out of range."
           )
         alert.save() 
   # broadcast Notification; Individual + community
@@ -346,6 +390,7 @@ class UserIDChangeConsumer(WebsocketConsumer):
     self.room_group_name,
     self.channel_name
     )
+    raise StopConsumer()
   def user_id_change_message(self, event):
     print('event  envoi user', event)
     message = event['message']
